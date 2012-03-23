@@ -1,7 +1,7 @@
 import java.io._
 import scala.xml._
 
-object GenerateIndeces extends App {
+object GenerateIndices extends App {
   val root = new File("maven")
   recurse(root)
 
@@ -42,3 +42,4 @@ object GenerateIndeces extends App {
     out.close
   }
 }
+GenerateIndices.main(args)
