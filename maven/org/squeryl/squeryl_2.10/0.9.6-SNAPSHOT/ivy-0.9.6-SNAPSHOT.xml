@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ivy-module version="2.0" xmlns:e="http://ant.apache.org/ivy/extra">
+	<info organisation="org.squeryl" module="squeryl_2.10" revision="0.9.6-SNAPSHOT" status="integration" publication="20130415161637">
+		<license name="Apache 2" url="http://www.apache.org/licenses/LICENSE-2.0.txt"/>
+		<description homepage="http://squeryl.org">
+		A Scala ORM and DSL for talking with Databases using minimum verbosity and maximum type safety
+		</description>
+	</info>
+	<configurations>
+		<conf name="compile" visibility="public" description=""/>
+		<conf name="runtime" visibility="public" description="" extends="compile"/>
+		<conf name="test" visibility="public" description="" extends="runtime"/>
+		<conf name="provided" visibility="public" description=""/>
+		<conf name="optional" visibility="public" description=""/>
+		
+		
+		
+		
+		<conf name="sources" visibility="public" description=""/>
+		<conf name="docs" visibility="public" description=""/>
+		<conf name="pom" visibility="public" description=""/>
+	</configurations>
+	<publications>
+		<artifact name="squeryl_2.10" type="pom" ext="pom" conf="pom"/>
+		<artifact name="squeryl_2.10" type="jar" ext="jar" conf="compile"/>
+		<artifact name="squeryl_2.10" type="src" ext="jar" conf="sources" e:classifier="sources"/>
+		<artifact name="squeryl_2.10" type="doc" ext="jar" conf="docs" e:classifier="javadoc"/>
+	</publications>
+	<dependencies>
+		<dependency org="org.scala-lang" name="scala-library" rev="2.10.0" conf="compile->default(compile)"/>
+		<dependency org="cglib" name="cglib-nodep" rev="2.2" conf="compile->default(compile)"/>
+		<dependency org="com.h2database" name="h2" rev="1.2.127" conf="provided->default(compile)"/>
+		<dependency org="mysql" name="mysql-connector-java" rev="5.1.10" conf="provided->default(compile)"/>
+		<dependency org="postgresql" name="postgresql" rev="8.4-701.jdbc4" conf="provided->default(compile)"/>
+		<dependency org="net.sourceforge.jtds" name="jtds" rev="1.2.4" conf="provided->default(compile)"/>
+		<dependency org="org.apache.derby" name="derby" rev="10.7.1.1" conf="provided->default(compile)"/>
+		<dependency org="junit" name="junit" rev="4.8.2" conf="provided->default(compile)"/>
+		<dependency org="org.scala-lang" name="scalap" rev="2.10.0" conf="compile->default(compile)"/>
+		<dependency org="org.scalatest" name="scalatest_2.10" rev="1.9.1" conf="test->default(compile)"/>
+		<exclude org="org.scala-lang" module="scala-library" artifact="*" type="jar" ext="*" matcher="exact"/>
+		<exclude org="org.scala-lang" module="scala-compiler" artifact="*" type="jar" ext="*" matcher="exact"/>
+		<override org="org.scala-lang" module="scala-library" matcher="exact" rev="2.10.0"/>
+		<override org="org.scala-lang" module="scala-compiler" matcher="exact" rev="2.10.0"/>
+	</dependencies>
+</ivy-module>
