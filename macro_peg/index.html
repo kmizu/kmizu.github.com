@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="ja">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>Macro PEG: PEG with macro-like rules</title>
+
+		<meta name="description" content="Macro PEG: PEG with macro-like rules">
+		<meta name="author" content="Kota Mizushima">
+
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/black.css" id="theme">
+<style type="text/css">
+  .reveal h1,
+  .reveal h2,
+  .reveal h3,
+  .reveal h4,
+  .reveal h5,
+  .reveal h6 {
+    text-transform: none;
+  }
+</style>
+
+
+		<!-- Code syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+				<section data-markdown data-separator="^\n---$"><script type="text/template">
+          ## Macro PEG: PEG with macro-like rules
+          ## 構文解析友の会（水島 宏太）
+          ---
+
+---
+
+          ### 誰？
+          * Twitter ID: [@kmizu](https://twitter.com/kmizu)
+          * GitHub: [kmizu](https://github.com/kmizu)
+          * 構文解析屋
+          * プログラミング言語オタク 
+          * 趣味：プログラミング言語|形式言語の自作
+            * [Onion](https://github.com/onionlang/onion)
+            * [Klassic](https://github.com/klassic/klassic)
+            * [Macro PEG](https://github.com/kmizu/macro_peg)
+            * , etc.
+
+---
+
+          ## この発表について
+          * Macro PEGを作った
+            * PEGの規則が引数を取れるように拡張したもの
+          * Macro PEGは様々なパターンを簡潔に表現できる
+            * 順列言語
+              * プログラミング言語のアクセス修飾子等
+            * 回文（Pure PEGでは表現できなさそう）
+          * Macro PEGはパーザコンビネータと綺麗に対応が付く
+          * 後方参照等の拡張についても考察
+
+---
+
+          ## What is PEG（Parsing Expression Grammar）?
+          * Yet another formal language by Bryan Ford(2004)
+          * Birman's TDPL（1970s） is an ancestor of PEG
+
+---
+
+          ## Characteristics of PEG
+          * An analytic formal grammar
+          * Any PEG can be parsed in linear time
+            * By packrat parsing
+          * Can express deteministic CFLs
+          * Can express some context sensitive languages
+            * e.g. a^n b^n c^n（n≧1）
+          * PEL ⊃CFL or not is open problem（！）
+
+---
+
+          ## PEG Basics（１） - atomic parsing expression
+          * terminal symbol such as `"foo"`
+          * nonterminal symbol such as `N`
+          * empty string: ε
+
+---
+
+          ## PEG Basics（２）
+          * Sequence: e1 e2
+          * Ordered Choice: e1 / e2
+          * Zero-or-more: e*
+          * Optional: e?
+          * And-predicate: &e
+          * Not-predicate: !e
+
+---
+
+          ## PEG that expresses a^n b^n c^n
+          * cannot be expressed by CFG
+          * not(CFL ⊃PEL)
+
+```
+S ← &(A !b) a+ B !.
+A ← a A? b
+B ← b B? c
+```
+
+---
+
+          ## Can PEG express palindrome?
+          * it is unknown
+          * but it is thought that PEG cannot express palindrome
+
+---
+
+          ## PEG cannot express some context sensitivties
+          * indentation-based layout syntax
+          * variable-declaration dependent syntax
+          * etc.
+          * Some extensions are required!
+
+---
+
+          ## Macro PEG
+          * I proposed 
+          * with macro-like rules
+          * evaluation strategy: call-by-name
+
+```
+Double(e) <- e e;
+S <- Double("A"); //matched to "AA"
+```
+
+---
+
+          ## Palindrome
+          * it is thought that PEG cannot express palindrome
+          * Macro PEG **can** express palindrome
+          * (Macro PEL) ⊃CFL?
+
+```
+S <- P("") !.
+P(r) <- "a" P("a" r)) / "b" P("b" r) / r
+```
+
+---
+
+          ## 'sequence without repetition' language
+          * `{"abc", "acb", "bca", "bac", "cab", "cba"}`
+          * modifiers in some programmign languages
+          * "public static final", "public final static", ...
+          * grammar size in PEG: O(n!)
+            * n is kind of modifiers probably
+
+---
+
+          ## 'sequence without repetition' language in Macro PEG
+
+```
+S = Modifiers(!"", "") !.;
+Modifiers(AlreadyLooked, Scope) = (!AlreadyLooked) (
+    &(Scope) Token("public") Modifiers(AlreadyLooked / "public", "public")
+  / &(Scope) Token("protected") Modifiers(AlreadyLooked / "protected", "protected")
+  / &(Scope) Token("private") Modifiers(AlreadyLooked / "private", "private")
+  / Token("static") Modifiers(AlreadyLooked / "static", Scope)
+  / Token("final") Modifiers(AlreadyLooked / "final", Scope)
+  / ""
+);
+Token(t) = t Spacing;
+Spacing = " "*;
+```
+
+---
+
+          ## Macro PEG can express [addition and multiplication](https://github.com/kmizu/macro_peg/blob/fd4525f86d30b3dd6573f33deebdc5f00a08c9a3/src/main/scala/com/github/kmizu/macro_peg/MacroPEGRunner.scala#L19-L47)
+
+```
+S = (Plus0("") / Mul0("")) !.;
+// the number of occurence of '1 represents a natural number.
+// a+b=c
+Plus0(Left) = Plus1(Left, "") / &(Left "1") Plus0(Left "1");
+
+Plus1(Left, Right)
+  = &(Left "+" Right "=") Plus2(Left, Right)
+  / &(Left "+" Right "1") Plus1(Left, Right "1");
+
+Plus2(Left, Right)
+  = Left "+" Right "=" Left Right;
+
+// check a*b=c
+Mul0(Left)
+  = &(Left "*") Mul1(Left, "", "")
+  / &(Left "1") Mul0(Left "1");
+
+Mul1(Left, Right, Prod)
+  = &(Left "*" Right "=") Mul2(Left, Right, Prod)
+  / &(Left "*" Right "1") Mul1(Left, Right "1", Prod Left);
+
+Mul2(Left, Right, Prod)
+  = Left "*" Right "=" Prod;
+
+"1+1=11", "111+11=11111", "111+1=11111" // should match
+"111*11=111111", "11*111=111111", "1*111=1" // should match
+```
+
+---
+
+          ## Macro PEG can express [subtraction](https://github.com/kmizu/macro_peg/blob/fd4525f86d30b3dd6573f33deebdc5f00a08c9a3/src/main/scala/com/github/kmizu/macro_peg/MacroPEGRunner.scala#L66-L82)
+
+```
+S = ReadRight("") !.;
+ReadRight(Right)
+  = &("1"* "-" Right "1") ReadRight(Right "1")
+  / &("1"* "-" Right "=") ReadDiff(Right, "");
+
+ReadDiff(Right, Diff)
+  = &("1"* "-" Right "=" Diff "1") ReadDiff(Right, Diff "1")
+  / &("1"* "-" Right "=" Diff !.) Check(Right, Diff);
+
+Check(Right, Diff)
+  = Right Diff "-" Right "=" Diff;
+
+11-1=1", "1-1=", "111-11=1", // should match
+111-1=1",  "111-1=111", "1-11=" // should not match
+```
+
+---
+
+          ## Macro PEG can express [exponent](https://github.com/kmizu/macro_peg/blob/fd4525f86d30b3dd6573f33deebdc5f00a08c9a3/src/main/scala/com/github/kmizu/macro_peg/MacroPEGRunner.scala#L88-L125)
+
+```
+S = ReadLeft("", "") !.;
+// the number of occurence of '1 represents a natural number.
+// |Seq| is the length of a sequence Seq.
+// ^ is exponent operator
+// ReadLeft("", "") checks input is a correct expression a^b=c.
+
+// Read a.
+// LeftAsOnes is a sequence of "1" where |LeftAsOnes| = |a|.
+// LeftAsDots is a sequence of . where |LeftAsDots| = |a|.
+ReadLeft(LeftAsOnes, LeftAsDots)
+  = &(LeftAsOnes "1") ReadLeft(LeftAsOnes "1", LeftAsDots .)
+  / &(LeftAsOnes "^") ComputePadding(LeftAsOnes, LeftAsDots, "");
+
+// Compute Padding which is a sequene of .
+// where |Padding| + |LeftAsDots| = |Input|
+ComputePadding(LeftAsOnes, LeftAsDots, Padding)
+  = &(Padding LeftAsDots .) ComputePadding(LeftAsOnes, LeftAsDots, Padding .)
+  / &(Padding LeftAsDots !.) ReadRight(LeftAsOnes, Padding, "", "1");
+
+// Read b.
+// Exp = a^Right.
+ReadRight(Left, Padding, Right, Exp)
+  = &(Left "^" Right "1") Multiply(Left, Padding, Right "1", Exp, "", "")
+  / &(Left "^" Right "=") Check(Left, Right, Exp);
+
+// Compute Left * OldExp.
+// This adds OldExp Left times into Exp.
+// I is a loop counter.
+Multiply(Left, Padding, Right, OldExp, Exp, I)
+  = &(Padding I .) Multiply(Left, Padding, Right, OldExp, Exp OldExp, I .)
+  / &(Padding I !.) ReadRight(Left, Padding, Right, Exp);
+
+// Check whole input.
+Check(Left, Right, Exp)
+  = Left "^" Right "=" Exp;
+
+"11^111=11111111", "11^=1", "1^11=1", "^11=", // should match
+"11^111=1111111",  "11^111=111111111" // should not match
+```
+
+---
+
+          ## Higher Order PEG
+          * Add **Rule Constructor**
+          * isn't it Higer Order PEG turing complete?
+            * I believe Higer Order PEG is not turing complete
+            * there is no proof
+
+```
+S <- TWICE(F1, "x") // "xxxx"
+TWICE(F, X) <- F(F(X))
+F1(x) <- x x 
+```
+
+---
+
+          ## Formal language should not be turing complete
+          * if possible
+          * too powerful language make it difficult to veify language properties
+          * less-powerful langauge is important
+            * Regex VS. CFG (or PEG)
+
+---
+
+          ## Macro PEG ←→ Parser Combinator [correspondence](https://github.com/kmizu/macro_peg/blob/master/src/main/scala/com/github/kmizu/macro_peg/combinator/MacroParsers.scala)
+
+---
+
+          ## Macro PEG cannot express
+          * variable declaration dependent syntax
+          * back reference extension resolve such problems
+
+```
+int x;
+x * x; // OK
+```
+
+```
+x * x; // parse error
+```
+
+---
+
+          ## Macro PEG with back reference
+          * is implemented as [`EvalCC` combinator](https://github.com/kmizu/macro_peg/blob/fd4525f86d30b3dd6573f33deebdc5f00a08c9a3/src/main/scala/com/github/kmizu/macro_peg/combinator/MacroParsers.scala#L52-L61)
+
+---
+
+          ## Macro PEG with back reference can express
+          * [variable declaration dependent syntax](https://github.com/kmizu/macro_peg/blob/fd4525f86d30b3dd6573f33deebdc5f00a08c9a3/src/test/scala/com/github/kmizu/macro_peg/MacroParsersSpec.scala#L73-L91)
+
+```
+object L {
+  lazy val Spacing: P[Any] = ("\r" | "\t" | " " | "\r" | "\n").*
+  def OPEN: P[Any] = "(" ~ Spacing
+  def CLOSE: P[Any] = ")" ~ Spacing
+  def EQ: P[Any] = "=" ~ Spacing
+  def SEMI_COLON: P[Any] = string(";") ~ Spacing
+  def VAL: P[Any] = "val" ~ Spacing
+  lazy val S: P[Any] = Statements(!"") ~ !any
+  def Statements(table: P[Any]): P[Any] = VAL ~ Identifier.evalCC{i => EQ ~ Expression(table) ~ SEMI_COLON ~ refer(Statements(table | i)).? } / Expression(table) ~ SEMI_COLON ~ refer(Statements(table)).?
+  def Expression(table: P[Any]): P[Any] = refer(Primary(table)) ~ (range(Seq('+','-','*','/')) ~ Spacing ~ refer(Primary(table))).*
+  def Primary(table: P[Any]): P[Any] =  table.and ~ Identifier | IntegerLiteral | (OPEN ~ refer(Expression(table)) ~ CLOSE)
+  lazy val Identifier: P[Any] = range('a'to'z','A'to'Z',Seq('_')) ~ range('a'to'z','A'to'Z','0'to'9',Seq('_')).* ~ Spacing
+  lazy val IntegerLiteral: P[Any] = range('0'to'9').+ ~ Spacing
+}
+```
+
+---
+
+          ## Macro PEG with back reference can express [min-xml](https://github.com/kmizu/macro_peg/blob/fd4525f86d30b3dd6573f33deebdc5f00a08c9a3/src/test/scala/com/github/kmizu/macro_peg/MacroParsersSpec.scala#L60-L72)
+
+```scala
+object MinXML {
+  lazy val I: P[Any] = range('a'to'z','A'to'Z', Seq('_')) ~ range('a'to'z','A'to'Z',Seq('_'),'0'to'9').*
+  lazy val S: P[Any] = "<" ~ I.evalCC {tag =>
+    ">" ~ S.* ~ "</" ~ tag ~ ">"
+  }
+}
+```
+
+---
+
+          ## Expressiveness of Macro PEG
+          * stronger than context free language probably
+          * Macro PEG VS. Boolean Grammer
+          * Macro PEG VS. IO Macro Grammar
+          * Macro PEG VS. OI Macro Grammar
+
+---
+
+          # Conclusion
+          * I proposed Macro PEG
+            * PEG with macro-like rules
+          * Macro PEG has interesting properties
+          * extensions to Macro PEG are easily implemented
+          * expressivenss of Macro PEG is unknown
+          * creating formal language is interesting!
+			  </script></section>
+      </div>
+		</div>
+    
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+
+		<script>
+
+			// Full list of configuration options available at:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				transition: 'slide', // none/fade/slide/convex/concave/zoom
+
+				// Optional reveal.js plugins
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true },
+					{ src: 'plugin/notes/notes.js', async: true }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>
