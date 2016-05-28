@@ -116,6 +116,15 @@
           * Not-predicate: !e
 
 ---
+         ## PEG Basics（３）
+
+```
+E <- A ("+" A / "-" A)*
+A <- P ("*" P / "/" P)*
+P <- "(" E ")" / [1-9]+
+```
+
+---
 
           ## PEG that expresses a^n b^n c^n
           * cannot be expressed by CFG
