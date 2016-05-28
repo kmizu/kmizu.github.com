@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="ja">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>LL(1)構文解析の原理</title>
+
+		<meta name="description" content="LL(1)構文解析の原理">
+		<meta name="author" content="Kota Mizushima">
+
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/black.css" id="theme">
+<style type="text/css">
+  .reveal h1,
+  .reveal h2,
+  .reveal h3,
+  .reveal h4,
+  .reveal h5,
+  .reveal h6 {
+    text-transform: none;
+  }
+</style>
+
+		<!-- Code syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+				<section data-markdown data-separator="^\n---$"><script type="text/template">
+
+## LL(1)構文解析の原理
+## 構文解析友の会（水島 宏太）
+
+---
+
+### 誰？
+* Twitter ID: [@kmizu](https://twitter.com/kmizu)
+* GitHub: [kmizu](https://github.com/kmizu)
+* 構文解析屋
+* プログラミング言語オタク 
+* 趣味：プログラミング言語|形式言語の自作
+  * [Onion](https://github.com/onionlang/onion)
+  * [Klassic](https://github.com/klassic/klassic)
+  * [Macro PEG](https://github.com/kmizu/macro_peg)
+  * , etc.
+
+---
+
+## この発表について
+* LL(1)構文解析の原理について解説
+* 詳しい部分についてははしょります
+
+---
+
+## LL(1)構文解析とは？
+* Left to right, Leftmost derivation
+* ほんとのLL(1)は遷移表を使って高速に解析
+* 今回は手書きパーザでLL(1)構文解析っぽいものを実行
+
+---
+
+## お題のBNF
+* reveal.jsで何故か表示が崩れる…
+
+```
+expression    ::= additive
+additive      ::= multitive additive_rep
+addtive_rep   ::= "+" multitive additive_rep
+              |   "-" multitive additive_rep
+              |   ε
+multitive     ::= primary multitive_rep
+multitive_rep    "*" primary multitive_rep
+              |  "/" primary multitive_rep
+              |  ε
+primary       ::= "(" expression ")" | NUMBER
+```
+
+---
+
+## additiveの呼び出し
+
+```
+expression    ::= additive // ←
+additive      ::= multitive additive_rep
+addtive_rep   ::= "+" multitive additive_rep
+　　　　　　　|   "-" multitive additive_rep
+　　　　　　　|   ε
+multitive     ::= primary multitive_rep
+multitive_rep    "*" primary multitive_rep
+　　　　　　　|  "/" primary multitive_rep
+　　　　　　　|  ε
+primary       ::= "(" expression ")" | NUMBER
+```
+
+---
+
+## additive_repの呼び出し
+
+```
+expression    ::= additive
+additive      ::= multitive additive_rep //←
+addtive_rep   ::= "+" multitive additive_rep
+　　　　　　　|   "-" multitive additive_rep
+　　　　　　　|   ε
+multitive     ::= primary multitive_rep
+multitive_rep    "*" primary multitive_rep
+　　　　　　　|  "/" primary multitive_rep
+　　　　　　　|  ε
+primary       ::= "(" expression ")" | NUMBER
+```
+
+---
+
+## additive_repにおける分岐
+* どれを選ぶ？
+
+```
+expression    ::= additive
+additive      ::= multitive additive_rep 
+addtive_rep   ::= "+" multitive additive_rep // ← ?
+　　　　　　　|   "-" multitive additive_rep // ← ?
+　　　　　　　|   ε                          // ← ?
+multitive     ::= primary multitive_rep
+multitive_rep    "*" primary multitive_rep
+　　　　　　　|  "/" primary multitive_rep
+　　　　　　　|  ε
+primary       ::= "(" expression ")" | NUMBER
+```
+
+---
+
+## additive_repにおける分岐
+* 最初の1トークン=FIRSTを見る
+
+```
+expression    ::= additive
+additive      ::= multitive additive_rep 
+addtive_rep   ::= "+" multitive additive_rep // {"+"}
+　　　　　　　|   "-" multitive additive_rep // {"-"}
+　　　　　　　|   ε                          // ε
+multitive     ::= primary multitive_rep
+multitive_rep    "*" primary multitive_rep
+　　　　　　　|  "/" primary multitive_rep
+　　　　　　　|  ε
+primary       ::= "(" expression ")" | NUMBER
+```
+
+---
+
+## additive_repにおける分岐
+* 空文字列になり得る場合は、さらにその先=FOLLOWを見る
+* 分岐が決定できる
+
+
+```
+expression    ::= additive
+additive      ::= multitive additive_rep 
+addtive_rep   ::= "+" multitive additive_rep // {"+"}
+　　　　　　　|   "-" multitive additive_rep // {"-"}
+　　　　　　　|   ε                        // {")"}
+multitive     ::= primary multitive_rep
+multitive_rep    "*" primary multitive_rep
+　　　　　　　|  "/" primary multitive_rep
+　　　　　　　|  ε
+primary       ::= "(" expression ")" | NUMBER
+```
+
+
+---
+
+## multitive_repにおける分岐
+* どれを選ぶ？
+
+```
+expression    ::= additive
+additive      ::= multitive additive_rep 
+addtive_rep   ::= "+" multitive additive_rep 
+　　　　　　　|   "-" multitive additive_rep 
+　　　　　　　|   ε                          
+multitive     ::= primary multitive_rep
+multitive_rep    "*" primary multitive_rep   // ← ?
+　　　　　　　|  "/" primary multitive_rep   // ← ?
+　　　　　　　|  ε                           // ← ?
+primary       ::= "(" expression ")" | NUMBER
+```
+
+---
+
+## multitive_repにおける分岐
+* additive_repの場合と同じ：最初の1トークン=FIRSTを見る
+
+```
+expression    ::= additive
+additive      ::= multitive additive_rep 
+addtive_rep   ::= "+" multitive additive_rep
+　　　　　　　|   "-" multitive additive_rep
+　　　　　　　|   ε                         
+multitive     ::= primary multitive_rep
+multitive_rep    "*" primary multitive_rep   // {"*"}
+　　　　　　　|  "/" primary multitive_rep   // {"/"}
+　　　　　　　|  ε                           // ε
+primary       ::= "(" expression ")" | NUMBER
+```
+
+---
+
+## multitive_repにおける分岐
+* additive_repの場合と同じ：空文字列になり得る場合は、さらにその先=FOLLOWを見る
+* 分岐が決定できる
+
+```
+expression    ::= additive
+additive      ::= multitive additive_rep 
+addtive_rep   ::= "+" multitive additive_rep 
+　　　　　　　|   "-" multitive additive_rep
+　　　　　　　|   ε                         
+multitive     ::= primary multitive_rep
+multitive_rep    "*" primary multitive_rep   // {"*"}
+　　　　　　　|  "/" primary multitive_rep   // {"-"}
+　　　　　　　|  ε                           // {")"}
+primary       ::= "(" expression ")" | NUMBER
+```
+
+---
+
+## primaryにおける分岐
+* 分岐は簡単に決定できる
+
+```
+expression    ::= additive
+additive      ::= multitive additive_rep 
+addtive_rep   ::= "+" multitive additive_rep 
+　　　　　　　|   "-" multitive additive_rep
+　　　　　　　|   ε                         
+multitive     ::= primary multitive_rep
+multitive_rep    "*" primary multitive_rep   // {"*"}
+　　　　　　　|  "/" primary multitive_rep   // {"-"}
+　　　　　　　|  ε                           // {")"}
+primary       ::= "(" expression ")"         // {"("}
+　　　　　　　| NUMBER                       // {NUMBER}
+
+```
+
+---
+
+## 手書きでない場合
+* 構文解析のための表を作る
+* 表からエントリを引いて次の分岐を決定する
+* "LL1 Parsing Table"などを参照のこと
+
+---
+
+## LL(1)の1って何？
+* 1トークン（1文字）だけ先読みして、どれに分岐するか決定できる
+
+---
+
+## LL(1)構文解析における字句解析の必要性
+* 次のような文法を考える
+
+```
+statement ::= "if" "(" expression ")" expression "else" expression
+　　　　　|  [a-zA-Z_] [a-zA-Z_0-9]*
+```
+          
+* 1文字先読みでは決定できない！
+* LL(1)構文解析では普通、以下のようにこう考える
+
+```
+statement ::=<IF> <LPAREN> expression <RPAREN> expression <ELSE> expression
+　　　　　|  <IDENTIFIER>
+```
+
+* これで1「トークン」先読みで決定できる
+
+---
+
+## LL(k) (k >= 2) 構文解析
+* kトークン先読みで分岐が決定できる
+* 手書きだと死ねる
+* 構文解析器生成系でも死ねる
+  * と思われていたがANTLR（旧PCCTS）が問題を解決した？
+  * というのを昔見た覚えがあるのだが、ソースを失念
+* JavaCCなどでは、部分的にkを1より大きくする機能がある
+
+---
+
+## 余談：字句解析の必要性について
+* 結局、従来の構文解析アルゴリズム（＝実装）の都合によるものに過ぎない
+* コンパイラの教科書では字句解析を必要なものとして扱っているものが多い
+  * 当時の時代背景を考慮する必要
+
+---
+
+## PEG(Ford04)
+* 字句解析は要らない（極論すれば）
+
+```
+statement <- "if" "(" expression ")" expression "else" expression
+　　　　　/  [a-zA-Z_] [a-zA-Z_0-9]*
+```
+
+* 最初に"if"を試して、**失敗したら**次の選択肢を試す
+* Packrat Parsing（メモ化）で線形時間で解析可能
+
+---
+
+## LL(k)の限界
+* 左再帰のサポートは（通常）無理
+  * 無限再帰になってしまう
+  * 表引きでも、conflictを起こす
+    * 以下の例では`{"(", NUMBER}`でconflictが起こる
+
+```
+expression ::= expression ("*" | "/") expression
+　　　　　　|  expression ("+" | "-") expression
+　　　　　　| "(" expression ")"
+　　　　　　|  NUMBER
+```
+
+---
+
+## JavaCC
+* https://javacc.java.net/
+* Java用parser generator
+* LL(k)
+  * デフォルトではk = 1
+* 構文木自動生成機能付き
+* 枯れている
+
+---
+
+## Coco/R
+* http://www.ssw.uni-linz.ac.at/Coco/
+* LL(k)
+* 多言語対応
+  * C#, C++, F#, VB.NET, Swift, Oberon(!), etc.
+
+---
+
+## ANTLR
+* http://www.antlr.org/
+* 今はJava用
+  * 昔のバージョンではC++対応もあったが…
+* LL(*)
+* バックトラック機能もあるよ！（オプション）
+* 左再帰もサポートしているよ！
+
+---
+
+## 余談
+* LL(0)文法は存在するか？
+* 全く先読みせずに分岐を決定する？
+* あるLL(0)文法が受理する言語 = 特定の1文字列のみからなる言語？
+
+---
+
+# 質問タイム
+どんどん質問してください
+
+</script></section>
+
+      </div>
+		</div>
+    
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+
+		<script>
+
+			// Full list of configuration options available at:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				transition: 'slide', // none/fade/slide/convex/concave/zoom
+
+				// Optional reveal.js plugins
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true },
+					{ src: 'plugin/notes/notes.js', async: true }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>
