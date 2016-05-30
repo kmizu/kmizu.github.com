@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="ja">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>プログラミング言語Klassic</title>
+
+		<meta name="description" content="プログラミング言語Klassic">
+		<meta name="author" content="Kota Mizushima">
+
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/black.css" id="theme">
+<style type="text/css">
+  .reveal h1,
+  .reveal h2,
+  .reveal h3,
+  .reveal h4,
+  .reveal h5,
+  .reveal h6 {
+    text-transform: none;
+  }
+</style>
+
+
+		<!-- Code syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+				<section data-markdown data-separator="^\n---$"><script type="text/template">
+
+## プログラミング言語Klassic
+### プログラミング言語友の会
+### 水島 宏太
+---
+
+---
+
+### 誰？
+* Twitter ID: [@kmizu](https://twitter.com/kmizu)
+* GitHub: [kmizu](https://github.com/kmizu)
+* 構文解析屋
+* プログラミング言語（作成）オタク 
+
+---
+
+## 自分がこれまでに作った（作っている)言語
+* [Onion](https://github.com/onionlang/onion) (2005-)
+  * 静的型、Javaバイトコード生成
+  * クラスベース、単一継承、インタフェース多重継承
+  * 第一級デリゲート（Kotlinのそれと同じようなの）
+  * Javaとほぼ同じ速度
+* [IMO](https://github.com/kmizu/imo)(2007-)
+  * 静的型、純粋関数型
+  * 第一級関数、IOモナド
+* [Macro PEG](htps://gitub.com/kmizu/macro_peg)(2015-)
+  * PEGを拡張した形式言語
+
+---
+
+## Klassic
+* Formerly Toys
+* [https://github.com/klassic/klassic](https://github.com/klassic/klassic)
+* 現在アクティブに開発中の言語
+
+---
+
+## Klassicの特徴
+* 動的型付き
+* 近い将来静的型になる予定
+* 式ベースの言語
+* 第一級関数
+* Java FFI（リフレクション経由）
+* ヒアドキュメント
+* ヒア式（New!)
+* その他謎文法
+
+---
+
+## 第一級関数
+* 定番のY Combinator
+
+```scala
+val Y = (f) => ((x) => f((y) => x(x(y))))((x) => f((y) => x(x(y))))
+val fact = Y((f) => (x) => if(x < 2) 1 else x * fact(x - 1))
+println(fact(3)) →3の階乗=6
+```
+
+* 時間を測定
+
+```scala
+val time = stopwatch( => {
+  sleep(1000)
+}
+println(time)
+```
+
+---
+
+## Java FFI
+
+```scala
+val list = new java.util.ArrayList
+list.add(1)
+list.add(2)
+println(list)
+val buffer = new java.lang.StringBuffer
+buffer.append("A").append("B").append("C")
+println(buffer)
+```
+
+---
+
+## ヒアドキュメント
+
+```scala
+println("#{<<TAG1 + 1} #{<<TAG2 + 2} #{<<TAG3 + 3}")
+tag1
+TAG1
+tag2
+TAG2
+tag3
+TAG3
+```
+
+---
+
+## ヒア式
+
+```scala
+println(<<$EXP1 * <<$EXP2 * $EXP3) →(1 + 2) * (2 + 3) * (3 + 4) = 105
+1 + 2
+EXP1
+2 + 3
+EXP2
+3 + 4
+EXP3
+```
+
+---
+
+## リストリテラル
+* PEGを駆使した謎文法
+
+```scala
+println([1, 2, 3]) → 普通
+println([
+  1
+  2
+  3
+]) → 改行もセパレータに
+println([
+  [1 2 3]
+  [4 5 6]
+  [7 8 9]
+]) → スペースもセパレータに！
+```
+
+---
+
+## これからの予定
+* 静的型システムの実装
+  * ScalaのようなUnified Type System
+  * 構造的部分型ベース（あるいは部分型を許さない）
+* オブジェクトシステム
+  * 継承レス
+* バイトコードコンパイラ
+  * 現在は構文木インタプリタ
+
+---
+
+気になった方は
+
+* https://github.com/klassic/klassic
+
+にスターをお願いします
+
+			  </script></section>
+      </div>
+		</div>
+    
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+
+		<script>
+
+			// Full list of configuration options available at:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				transition: 'slide', // none/fade/slide/convex/concave/zoom
+
+				// Optional reveal.js plugins
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true },
+					{ src: 'plugin/notes/notes.js', async: true }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>
