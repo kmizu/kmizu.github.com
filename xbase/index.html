@@ -54,6 +54,7 @@
 
 ## 私のプログラミング言語の学び方
 ## 水島 宏太（株式会社ドワンゴ）
+## Japan Scala Association代表理事
 
 ---
 
@@ -62,9 +63,6 @@
 * GitHub: [kmizu](https://github.com/kmizu)
 * 構文解析屋 & プログラミング言語オタク 
 * Scalaエヴァンジェリスト
-  * 日本Scalaユーザーズグループ代表
-    * 最近更新してないような…
-  * Japan Scala Assocation代表理事
 * 趣味：プログラミング言語|形式言語の自作
   * [Onion](https://github.com/onionlang/onion)
   * [Klassic](https://github.com/klassic/klassic)
@@ -73,18 +71,17 @@
 
 ---
 
-## この発表について
+## 今回の発表
 * どのようにして新しいプログラミング言語を学ぶか
   * △「なんとなく動く」ことがわかる
   * ◯処理系がどう解釈するかを理解する
-* 一般に適用していいかどうかは不明
-* 前提：一つ以上のプログラミング言語は既に操れる
+* 1つ以上のプログラミング言語が使える前提
 
 
 ---
 
 ## Hello, World
-* 新しく言語を学ぶときに行う儀式
+* 新しく言語を学ぶときの儀式
 * 意味はほとんどない
   * 標準出力への文字列の出力の方法がわかる程度
 * 書いてもいいけど、書かなくても良い
@@ -107,28 +104,55 @@ object HelloWorld {
 ### Hello, Worldの「次」
 * 大きくても数百行程度のもの
 * 色々な言語機能を試せるもの
-* GUIやネットワークアプリなどAPIを覚えるのに時間がかかるものは選ばない
+* あまり適さないもの：
+  * プラットフォームにより異なる部分が大きいもの
+    * GUIプログラム
+    * ネットワークプログラム
 
 ---
 
 ### パーザコンビネータライブラリ
-* 自分にとってのHello, World
-* パーザを簡単に構築するためのライブラリ
+* 私にとってのHello, World
+* パーザを構築するためのライブラリ
 * 色々な機能を試せる
   * 関数あるいはメソッドの（定義/呼び出し）
   * 多相型（静的型がある言語の場合）
   * 高階関数
-  * 基本的な文字列操作
-* とりあえず動くものを数百行以内で作れる
+  * 文字列操作
+* プラットフォームにほぼ依存しない
+* 数百行以内で作れる
+
+---
+
+### パーザコンビネータライブラリ in Scala
+* いわゆる電卓プログラム
+
+```scala
+def expression: Parser[Int] = A
+def A: Parser[Int] = M.chainl {
+  string("+").map{op => (lhs: Int, rhs: Int) => lhs + rhs} |
+  string("+").map{op => (lhs: Int, rhs: Int) => lhs - rhs}
+}
+def M: Parser[Int] = P.chainl {
+  string("*").map{op => (lhs: Int, rhs: Int) => lhs * rhs} |
+  string("/").map{op => (lhs: Int, rhs: Int) => lhs / rhs}
+}
+def P: Parser[Int] = (for {
+    _ <- string("(")
+    e <- expression 
+    _ <- string(")") 
+} yield e) | number
+def number: Parser[Int] = oneOf('0'to'9').*.map{_.mkString.toInt}
+```
 
 ---
 
 ## リファレンスマニュアルを読む
-* （仕様書を除いて）一番正確であることが期待できる
+* 比較的正確であることが期待できる
 * 最新の情報が載っていることが期待できる
 * リファレンスマニュアルの英語は難しくない
   * 簡単な英語！
-* 辞書のようにすぐに引けるようになっておくこと
+* 辞書のようにすぐに引けるようになっておくとよい
 
 ---
 
@@ -138,7 +162,7 @@ object HelloWorld {
 * [Scala API](http://www.scala-lang.org/api/current/)
   * Scala標準ライブラリのAPIリファレンス
 * [COLLECTIONS](http://docs.scala-lang.org/ja/overviews/collections/introduction)
-  * Scala 2.8以降のコレクションに関する設計ドキュメント:
+  * コレクションライブラリの設計ドキュメント
 
 ---
 
@@ -194,7 +218,7 @@ object HelloWorld {
 * 型チェック以降はかなり難しい
 * パーザはそんなに難しくない
   * [Parsers.scala](https://github.com/scala/scala/blob/2.12.x/src/compiler/scala/tools/nsc/ast/parser/Parsers.scala)
-  * 言語仕様書を片手に読んでみよう！
+* 言語仕様書を片手に読んでみよう！
 
 ---
 
@@ -206,8 +230,6 @@ object HelloWorld {
 
 ## まとめ
 * 処理系がプログラムをどう解釈しているか理解しよう
-  * 実装詳細はとりあえずおいとく
-    * 最適化とか、バイナリフォーマットとか
 * Hello, Worldの「次」を持っておこう
 * リファレンスマニュアルを読もう
 * 言語仕様書を読もう
