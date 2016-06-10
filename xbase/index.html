@@ -58,7 +58,7 @@
 
 ---
 
-### 自己紹介
+## 自己紹介
 * Twitter: [@kmizu](https://twitter.com/kmizu)
 * GitHub: [kmizu](https://github.com/kmizu)
 * 構文解析おじさん & プログラミング言語オタク 
@@ -73,9 +73,10 @@
 
 ## 今回の発表
 * どのようにして新しいプログラミング言語を学ぶか
-  * △「なんとなく動く」ことがわかる
-  * ◯処理系がどう解釈するかを理解する
-* 1つ以上のプログラミング言語が使える前提
+  * 「なんとなく動く」のでは不十分
+  * 処理系の実行モデルを理解したい
+    * 意味不明なトラブルに悩まされずに済む
+* **1つ以上のプログラミング言語が使える**ことは前提
 
 
 ---
@@ -101,7 +102,7 @@ object HelloWorld {
 
 ---
 
-### Hello, Worldの「次」
+## Hello, Worldの「次」
 * 大きくても数百行程度のもの
 * 色々な言語機能を試せるもの
 * あまり適さないもの：
@@ -111,7 +112,7 @@ object HelloWorld {
 
 ---
 
-### パーザコンビネータライブラリ
+## パーザコンビネータライブラリ
 * 私にとってのHello, World
 * パーザを構築するためのライブラリ
 * 色々な機能を試せる
@@ -123,7 +124,7 @@ object HelloWorld {
 * 数百行以内で作れる
 
 ---
-### パーザコンビネータライブラリ in Scala(1)
+## パーザコンビネータライブラリ in Scala(1)
 * 解析結果を`ParseResult[+T]`として表現
 
 ```scala
@@ -147,7 +148,7 @@ def string(literal: String): Parser[String] = input => {
 
 ---
 
-### パーザコンビネータライブラリ in Scala(2)
+## パーザコンビネータライブラリ in Scala(2)
 * `self`の0回以上の繰り返し
 
 ```scala
@@ -166,7 +167,7 @@ def * : Parser[List[T]] = input => {
 
 ---
 
-### パーザコンビネータライブラリ in Scala(3)
+## パーザコンビネータライブラリ in Scala(3)
 * `self`に続いて`right`にマッチ
 
 ```scala
@@ -187,7 +188,7 @@ def ~[U](right: Parser[U]) : Parser[(T, U)] = input => {
 
 ---
 
-### パーザコンビネータライブラリ in Scala(4)
+## パーザコンビネータライブラリ in Scala(4)
 * 中置演算子の処理に便利
 
 ```scala
@@ -202,7 +203,7 @@ def chainl(q: Parser[(T, T) => T]): Parser[T] = {
 
 ---
 
-### パーザコンビネータライブラリ in Scala(5)
+## パーザコンビネータライブラリ in Scala(5)
 * `self | right`でどちらかにマッチする
 
 ```scala
@@ -216,7 +217,7 @@ def |(right: Parser[T]): Parser[T] = input => {
 
 ---
 
-### パーザコンビネータライブラリ in Scala(6)
+## パーザコンビネータライブラリ in Scala(6)
 * `self`の解析結果を加工
 
 ```scala
@@ -230,7 +231,7 @@ def map[U](function: T => U): Parser[U] = input => {
 
 ---
 
-### パーザコンビネータライブラリ in Scala(7)
+## パーザコンビネータライブラリ in Scala(7)
 
 ```scala
 def flatMap[U](function: T => Parser[U]): Parser[U] = input => {
@@ -244,7 +245,7 @@ def flatMap[U](function: T => Parser[U]): Parser[U] = input => {
 
 ---
 
-### パーザコンビネータライブラリ in Scala(8)
+## パーザコンビネータライブラリ in Scala(8)
 * ライブラリの利用例
 * ライブラリの実装は**100行未満**
 
@@ -313,11 +314,60 @@ def number: Parser[Int] = oneOf('0'to'9').*.map{_.mkString.toInt}
 
 ---
 
-### Scalaの言語仕様書
+## Scalaの言語仕様書
 * [Scala Language Speficiation](http://www.scala-lang.org/files/archive/spec/2.11/)
 * 以前はPDF版のみだった
 * 2.11からHTML版のみに変更
 * よくわからない文法はこれを読めばだいたいわかる
+
+---
+
+## 処理系が生成したバイナリを読む
+* 中間コードを生成する処理系の場合に有用
+* 逆コンパイラ
+  * コンパイル後のコードによってはちゃんと復元できないことも
+* 逆アセンブラ
+  * こっちが確実
+  * Java: javap
+  * .NET Framework: ildasm
+* 中間コードは割と人間が読めるので恐れる必要はない
+
+---
+
+## Hello, Worldを逆アセンブルする(1)
+
+```scala
+object HelloWorld {
+  def main(args: Array[String]): Unit = {
+    println("Hello, World")
+  }
+}
+```
+
+---
+
+## Hello, Worldを逆アセンブルする(2)
+
+```
+$ javap -c HelloWorld$
+Compiled from "HelloWorld.scala"
+public final class HelloWorld$ {
+  public static final HelloWorld$ MODULE$;
+
+  public static {};
+    Code:
+       0: new           #2                  // class HelloWorld$
+       3: invokespecial #12                 // Method "<init>":()V
+       6: return
+
+  public void main(java.lang.String[]);
+    Code:
+       0: getstatic     #19                 // Field scala/Predef$.MODULE$:Lscala/Predef$;
+       3: ldc           #21                 // String Hello, World
+       5: invokevirtual #25                 // Method scala/Predef$.println:(Ljava/lang/Object;)V
+       8: return
+}
+```
 
 ---
 
@@ -332,7 +382,7 @@ def number: Parser[Int] = oneOf('0'to'9').*.map{_.mkString.toInt}
 
 ---
 
-### Scala処理系のソース
+## Scala処理系のソース
 * https://github.com/scala/scala
 * 型チェック以降はかなり難しい
 * パーザはそんなに難しくない
@@ -348,11 +398,12 @@ def number: Parser[Int] = oneOf('0'to'9').*.map{_.mkString.toInt}
 ---
 
 ## まとめ
-* 処理系がプログラムをどう解釈しているか理解しよう
-* Hello, Worldの「次」を持っておこう
-* リファレンスマニュアルを読もう
-* 言語仕様書を読もう
-* 処理系のソースを読もう
+* 処理系の「実行モデル」を理解しよう
+* Hello, Worldの「次」を持っておく
+* リファレンスマニュアルを読んでみよう
+* 言語仕様書を読んでみよう
+* 処理系が生成したコードを読んでみよう
+* 処理系のソースも余裕があれば読んでみよう
 
 ---
 
