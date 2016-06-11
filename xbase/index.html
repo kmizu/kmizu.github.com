@@ -71,20 +71,62 @@
 
 ---
 
+## 宣伝 - ScalaMatsuri 2017
+* 2017年2月25,26日開催
+  * ScalaMatsuri 2016と同じ会場(の予定)
+  * お台場
+* キックオフミーティング
+  * 2016年07月02（土）13:00 - 15:00
+  * [ここ](https://japan-scala-association.doorkeeper.jp/events/46473)から申し込み可能
+  * 興味のある皆さんは是非参加を！
+
+---
+
 ## 今回の発表
 * どのようにして新しいプログラミング言語を学ぶか
 1. 個々の構文を**丸暗記**する
   * モチベーションが保ちづらい
-  * 「これまで出てこなかった」パターンに弱い
+  * 未知のパターンに弱い
 1. とにかく**手を動かして**学ぶ
   * モチベーションは維持しやすい
-  * 「これまで出てこなかった」パターンにやはり弱い
-    * 「なんとなく動く」
-1. 言語の**実行モデル**を理解する
+  * 未知のパターンにやはり弱い
+  * 「なんとなく動く」ことしかわからない
+1. 言語の**実行モデル**を理解する <--
   * 「構文」「型システム」「意味論」に分解する
   * 「具象構文」と「抽象構文」を区別する
   * 言語の全体像を素早く学べる
 
+---
+
+## 文法と型システムと意味論
+* 文法：構文解析器がどのようなプログラムを受理するかを規定
+* 型システム：さらにその中でどのようなプログラムが「正しい」かを規定
+* 意味論：プログラムが実行時にどのように振る舞うかを規定
+  * 操作的意味論 <-- 一番よく出てくる
+    * インタプリタのようなもので動作を規定
+  * 公理的意味論
+  * 表示的意味論
+
+---
+
+## 具象構文と抽象構文
+
+* 具象構文
+
+```scala
+if(i >= 20)
+  "adult"
+else
+  "minor'
+```
+
+* 抽象構文（に近い表現）
+
+```scheme
+(if (>= i 20)
+  "adult"
+  "minor")
+```
 
 ---
 
@@ -141,8 +183,11 @@ case object ParseFaiure extends ParseResult[Nothing]
 type Parser[+T] = String => ParseResult[T]
 
 def oneOf(seqs: Seq[Char]*): Parser[String] = input => {
-  if(input.length == 0 || !seqs.exists(seq => seq.exists(ch => ch == input.charAt(0)))) ParseFaiure
-  else ParseSuccess(input.substring(0, 1), input.substring(1))
+  if(input.length == 0 || 
+    !seqs.exists(seq => seq.exists(ch => ch == input.charAt(0)))
+  ) ParseFaiure
+  else 
+    ParseSuccess(input.substring(0, 1), input.substring(1))
 }
 
 def string(literal: String): Parser[String] = input => {
@@ -363,15 +408,15 @@ public final class HelloWorld$ {
 
   public static {};
     Code:
-       0: new           #2                  // class HelloWorld$
-       3: invokespecial #12                 // Method "<init>":()V
+       0: new           #2
+       3: invokespecial #12
        6: return
 
   public void main(java.lang.String[]);
     Code:
-       0: getstatic     #19                 // Field scala/Predef$.MODULE$:Lscala/Predef$;
-       3: ldc           #21                 // String Hello, World
-       5: invokevirtual #25                 // Method scala/Predef$.println:(Ljava/lang/Object;)V
+       0: getstatic     #19
+       3: ldc           #21
+       5: invokevirtual #25
        8: return
 }
 ```
@@ -384,14 +429,13 @@ public final class HelloWorld$ {
 * 文法はBNFかパーザのソースを見ればだいたいわかる
   * ちょっと言い過ぎ？
 * わからない部分は適度に飛ばす
-  * 同じ箇所に固執しない
-
+* 同じ箇所に固執しない
 
 ---
 
 ## Scala処理系のソース
-* https://github.com/scala/scala
-* 型チェック以降はかなり難しい
+* [scala/scala](https://github.com/scala/scala)
+* 型チェック以降の処理はかなり難しい
 * パーザはそんなに難しくない
   * [Parsers.scala](https://github.com/scala/scala/blob/2.12.x/src/compiler/scala/tools/nsc/ast/parser/Parsers.scala)
 * 言語仕様書を片手に読んでみよう！
