@@ -54,7 +54,7 @@
 
 ## kollectionの紹介
    第3回Kotlin勉強会＠Sansan
-## 水島 宏太
+## Kota Mizushima
 ### 構文解析友の会
 ### プログラミング言語友の会
 
@@ -327,6 +327,34 @@ map2[6] == Some(8)
 
 ---
 
+## Scalaistから見たKotlin(1) - 良いところ
+
+* 基本文法はだいたいScalaから借りてきてる
+  * Scalaistからみてわかりやすい
+  * data class ≒case class
+  * sealed class
+  * val/var name: type
+  * primary constructor
+* (Scalaに比べて）コンパイルが速い
+  * でも遅い
+  * もっとコンパイルが速くなることを期待
+
+---
+
+## Scalaistから見たKotlin(2) - 良くないところ
+
+* sealed classを継承してdata classを作れない
+  * Kotlin 1.1では改善されるらしい
+* パターンマッチがない
+  * ADTが気軽に作れない
+* Scalaから引き継いだ謎のFunction22制限
+  * 問題になることはほとんどない
+* ツールが未成熟
+  * [dokka](https://github.com/Kotlin/dokka)
+  * [spek](https://github.com/JetBrains/spek)
+
+---
+
 ## まとめ
 * Kotlinには不変コレクションがない
 * 不変コレクションライブラリを作ってみた
@@ -343,8 +371,6 @@ map2[6] == Some(8)
 * とても見づらい（一応JetBrains公式）
 * dokkaを使っている人がさっぱり見当たらない
 * dokkaの改善に貢献しよう！
-
----
 
         </script></section>
 
