@@ -53,7 +53,7 @@
 				<section data-markdown data-separator="^\n---$"><script type="text/template">
 
 ## kollectionの紹介
-   @第3回Kotlin勉強会＠Sansan
+   第3回Kotlin勉強会＠Sansan
 ## 水島 宏太
 ### 構文解析友の会
 ### プログラミング言語友の会
@@ -89,8 +89,8 @@
 ## 不変 VS. 読み取り専用
 
 * 不変の場合、ある変数が指すオブジェクトは絶対に変わらない
-* 読み取り専用の場合、特定の変数経由でオブジェクトが変更できない
-* Kotlinは不変コレクションを提供しない
+* 読み取り専用の場合、特定の変数経由でオブジェクトが変更できないことしか保証しない
+* Kotlin標準ライブラリ(stdlib)は不変コレクションを提供しない
   * 読み取り専用ビューのみ
 
 ```kotlin
@@ -114,25 +114,26 @@ true
   * 引数として受け取ったコレクションをフィールドに安全に代入できる
 * 読み取り専用ビューはどちらも提供しない
 
-### Kotlinにも
-### 不変コレクションライブラリが欲しい！
+Kotlinにも
+不変コレクションライブラリが欲しい！
 
 ---
 
 ## kollection
 * https://github.com/kmizu/kollection
 * Kotlin用不変コレクションライブラリ
-* latest: 0.2
+* latest: 0.3
+  * 今日リリースした
 
 ```
 dependencies {
-  compile "com.github.kmizu:kollection:0.2"
+  compile "com.github.kmizu:kollection:0.3"
 }
 ```
 
 ---
 
-## kollectionが提供するコレクション（0.2）
+## kollectionが提供するコレクション（0.3）
 
 * KList: 不変リスト
 * KStream: 不変遅延リスト
@@ -210,6 +211,44 @@ x getOrElse { "BAR" } == "BAR"
 
 ---
 
+## KEither
+
+* 失敗した場合の情報を保持するように`KOption`を拡張したもの
+  * 通常、`Right`で成功時の情報を、`Left`で失敗時の情報を保持する
+* いわゆるEither
+
+```kotlin
+val x: KEither<Int, Int> = Left<Int, Int>(1)
+x.map{it * 2} == Left<Int, Int>(1) // Leftの場合はmapが適用されない
+```
+
+```kotlin
+val x: KEither<Int, Int> = Right<Int, Int>(1)
+x.map{it * 2} == Right<Int, Int>(2) // Rightの場合にのみmapが適用される
+```
+
+--
+
+## KBatchedQueue
+
+* 不変キュー（FIFO）
+* 償却計算量（O(n)）
+
+```kotlin
+val q = KBatchedQueue(1, 2, 3, 4, 5)
+val result = q enqueue 6
+KBatchedQueue(1, 2, 3, 4, 5, 6).toList() == result.toList()
+```
+
+```kotlin
+val q = KBatchedQueue(1, 2, 3, 4, 5)
+val result = q enqueue 6
+val result = q.dequeue()
+KBatchedQueue(2, 3, 4, 5).toList() == result.toList()
+```
+
+---
+
 ## KStack
 
 * 不変スタック（内部的には`KList`を利用)
@@ -283,6 +322,8 @@ map2[6] == Some(8)
   * 赤黒木ベース
 * KHashMap, KHashSet
   * ハッシュトライベース？
+* KRealtimeQueue
+  * 各操作が必ず定数時間で終わるようにする
 
 ---
 
@@ -291,17 +332,17 @@ map2[6] == Some(8)
 * 不変コレクションライブラリを作ってみた
   * KList, KStream, KOption, KStack, etc.
 * まだまだ工事中
-  * 予定：KHashSet, KTreeSet, KHashMap, KTreeMap
+  * 予定：KRealtimeQueue, KHashSet, KTreeSet, KHashMap, KTreeMap
 
 ---
 
-## おまけ１ - dokkaが生成したAPIリファレンス
+## おまけ - dokkaが生成したAPIリファレンス
 
 <a href="dokka.png"><img src="dokka.png" width="50%" height="50%"></a>
 
 * とても見づらい（一応JetBrains公式）
 * dokkaを使っている人がさっぱり見当たらない
-* dokkaを使って改善に貢献しよう！
+* dokkaの改善に貢献しよう！
 
 ---
 
