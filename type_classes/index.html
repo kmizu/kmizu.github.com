@@ -248,7 +248,30 @@ member :: Eq a => [a] -> a -> Bool
 
 ## 5.1 Translation of equality
 
-* 4とやってることはほぼ同じなのでばっさり略
+```haskell
+data EqD a = EqDict (a -> a -> Bool)
+eq (EqDict e) = e
+eqDInt :: EqD Int
+eqDInt = EqDict eqInt
+eqDChar :: EqD Int
+eqDChar = EqDict eqChar
+member' :: EqD a -> [a] -> a -> Bool
+member' eqDa [] y = False
+member' eqDa (x:xs) y = eq eqDa x y \/ member' eqDa xs y
+eqDPair :: (EqD a, EqD b) -> EqD (a,b)
+eqDPair (eqDa,eqDb) = EqDict (eqPair (eqDa,eqDb))
+eqPair :: (EqD a, EqD b) -> (a,b) -> (a,b) -> Bool
+eqPair (eqDa,eqDb) (x,y) (u,v) = eq eqDa x u & eq eqDb y v
+eqDList :: EqD a -> EqD [a]
+eqDList eqDa = EqDict (eqList eqDa)
+eqList :: EqD a -> [a] -> [a] -> Bool
+eqList eqDa [] [] = True
+eqList eqDa [] (y:ys) = False
+eqList eqDa (x:xs) [] = False
+eqList eqDa (x:xs) (y:ys) = eq eqDa x y & eq (eqDList eqDa) xs ys
+```
+
+* めんどくさいです
 
 ---
 
