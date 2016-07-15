@@ -201,7 +201,7 @@ numDFloat = NumDict addFloat mulFloat negFloat
 square' :: NumD a -> a -> a
 square' numD x = mul numD x x
 squares' :: (NumD a, NumD b, NumD c) -> (a,b,c) -> (a,b,c)
-squares' (numDa, numDb, numDc) (x, y, z>
+squares' (numDa, numDb, numDc) (x, y, z)
   = (square' numD a x, square' numD b y, square' numD c z) 
 ```
 
@@ -301,7 +301,7 @@ memsq :: Num a => [a] -> a -> Bool
 
 ```haskell
 class Top a where
-  fun1 : : a -> a
+  fun1 :: a -> a
 class Top a => Left a where
   fun2 :: a -> a
 class Top a => Right a where
