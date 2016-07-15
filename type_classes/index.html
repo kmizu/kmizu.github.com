@@ -105,35 +105,193 @@
 
 ---
 
-## 1 Introduction
+## 1 Introduction (1)
+
+* ad-hoc と parametric polymorphism の定義
+  * 被演算子の型によって異なる振る舞いをするのがad-hoc
+  * 型によらず同じ振る舞いをするのがparametric
+* parametric polymorphism: Hindly/Milner type system
+* ad-hoc polymorphism: いいのがない
+  * type classを導入
+* 算術式と同値比較演算子を例にして説明
+* オブジェクト指向とか抽象データ型にも関連
 
 ---
 
-## 2 Limitations of ad-hoc polymorphism 
+## 2 Limitations of ad-hoc polymorphism  (1)
 
---- 
+* 算術演算子について
 
-## 3 An introductory example
+```ml
+square x = x * x
+square (x, y, z)
+  = (square x, square, y, square z)
+```
+
+* x, y, zがIntでもFloatでも適用できるようにしたい
+  * SML(Standard ML)では無理
+* Mirandaだとそもそも数値はnumしかない
+
+---
+
+## 2 Limitations of ad-hoc polymorphism  (2)
+
+* 同値比較演算子
+
+```ml
+member [] y = False
+member (x:xs) y = (x == y> \/ member xs y
+
+member [1, 2, 3] 2
+member "Haskell 'x'
+```
+
+* memberは多相的：何故？
+
+```ml
+(member:: [eqtype a] -> eqtype a -> Bool
+```
+
+---
+
+## 3 An introductory example (1)
+
+* これらを統一的に扱うために型クラスを導入する
+
+```ml
+square x = x * x
+square :: Num a => a -> a
+```
+
+---
+
+## 3 An Introductory example (2)
+
+```haskell
+class Num a where
+  (+), (*) :: a -> a -> a
+  negate   :: a -> a
+
+instance Num Int where
+  (+)      = addInt
+  (*)      = mulInt
+  negate   = negInt
+
+instance Nun Float where
+  (+)      = addFloat
+  (*)      = mulFloat
+  negate   = negFloat
+```
 
 ---
 
 ## 4 Translation
 
+* 実体は辞書（≒オブジェクト）を渡しているだけ
+
+```haskell
+data NumD a = NumDict (a -> a -> a) (a -> a -> a) (a -> a>
+add (NumDict a m n) = a
+mul (NumDict a m n) = m
+neg (Numbict a m n) = n
+nunDInt :: NumD Int
+numDInt = NumDict addInt mulInt negInt
+numbFloat :: NumD Float
+numDFloat = NumDict addFloat mulFloat negFloat
+square' :: NumD a -> a -> a
+square' numD x = mul numD x x
+squares' :: (NumD a, NumD b, NumD c) -> (a,b,c) -> (a,b,c)
+squares' (numDa, numDb, numDc) (x, y, z>
+  = (square' numD a x, square' numD b y, square' numD c z) 
+```
+
 ---
 
-## 5 A further example: equality
+## 5 A further example: equality (1)
+
+* eqtypeの一般化として書ける
+
+```haskell
+class Eq a where 
+  (==) :: a -> a -> bool 
+instance Eq Int where 
+  (==) = eqInt 
+instance Eq Char where
+  (==) = eqChar 
+member :: Eq a => [a] -> a -> Bool 
+member y = False 
+member (x:xs) y = (x == y) \/ member xs y 
+instance Eq a, Eq b => Eq (a,b) where 
+  (u,v) == (x,y) = (u == x) & (v == y) 
+instance Eq a => Eq a where
+  [] == [] = True 
+  [] == y:ys = False
+  x:xs == [] = False 
+  x:xs == y:ys = (x == y) & (xs == ys)
+data Set a = MkSet a 
+instance Eq a => Eq (Set a) where 
+  MkSet xs == MkSet ys = and (map (member xs) ys) 
+                       & and (map (member ys) xs)
+```
+
+---
+
+### 5 A further example: equality (2)
+
+* member関数（の型）はこう書ける
+
+```
+member :: Eq a => [a] -> a -> Bool
+```
 
 ---
 
 ## 5.1 Translation of equality
 
+* 4とやってることはほぼ同じなのでばっさり略
+
 ---
 
-## 6 Subclasses
+## 6 Subclasses (1)
+
+* Numな値もEqで比較したい
+* サブクラス
+
+```haskell
+class Eq a => Num a where
+  (+) :: a -> a -> a
+  (*) :: a -> a -> a
+  negate :: a -> a 
+
+memsq :: Num a => [a] -> a -> Bool
+```
+
+* memsqのシグニチャにはEqが出てこない
+
+---
+
+## 6 Subclasses (2)
+
+* 菱型継承問題…
+  * は起こらない
+* オブジェクト指向言語と違う点
+
+```haskell
+class Top a where
+  fun1 : : a -> a
+class Top a => Left a where
+  fun2 :: a -> a
+class Top a => Right a where
+  fun3 :: a -> a
+class Left a, Right a => Bottom a where
+  fun4 :: a -> a 
+```
 
 ---
 
 ## 7 Conclusion
+
+* ばっさり略
 
 </script></section>
 
