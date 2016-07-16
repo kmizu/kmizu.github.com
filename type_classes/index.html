@@ -202,7 +202,7 @@ mul (NumDict a m n) = m
 neg (Numbict a m n) = n
 nunDInt :: NumD Int
 numDInt = NumDict addInt mulInt negInt
-numbFloat :: NumD Float
+numDFloat :: NumD Float
 numDFloat = NumDict addFloat mulFloat negFloat
 square' :: NumD a -> a -> a
 square' numD x = mul numD x x
