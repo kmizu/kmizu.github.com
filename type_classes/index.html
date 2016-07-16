@@ -124,13 +124,19 @@
 
 ```haskell
 square x = x * x
-square (x, y, z)
+square x = x*x 
+```
+
+* これはSML(Standard ML)では無理
+* Mirandaだとそもそも数値はnumしかない
+
+```haskell
+squares (x, y, z)
   = (square x, square, y, square z)
 ```
 
-* x, y, zがIntでもFloatでも適用できるようにしたい
-  * SML(Standard ML)では無理
-* Mirandaだとそもそも数値はnumしかない
+* IntとNumが引数の場合でオーバーロードされた別バージョンを用意する
+  * 組み合わせ爆発
 
 ---
 
