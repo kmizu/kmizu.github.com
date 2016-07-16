@@ -132,7 +132,7 @@ square x = x*x
 
 ```haskell
 squares (x, y, z)
-  = (square x, square, y, square z)
+  = (square x, square y, square z)
 ```
 
 * IntとNumが引数の場合でオーバーロードされた別バージョンを用意する
@@ -146,7 +146,7 @@ squares (x, y, z)
 
 ```haskell
 member [] y = False
-member (x:xs) y = (x == y> \/ member xs y
+member (x:xs) y = (x == y) \/ (member xs y)
 
 member [1, 2, 3] 2
 member "Haskell 'x'
@@ -196,7 +196,7 @@ instance Nun Float where
 * 実体は辞書（≒オブジェクト）を渡しているだけ
 
 ```haskell
-data NumD a = NumDict (a -> a -> a) (a -> a -> a) (a -> a>
+data NumD a = NumDict (a -> a -> a) (a -> a -> a) (a -> a)
 add (NumDict a m n) = a
 mul (NumDict a m n) = m
 neg (Numbict a m n) = n
@@ -226,7 +226,7 @@ instance Eq Char where
   (==) = eqChar 
 member :: Eq a => [a] -> a -> Bool 
 member y = False 
-member (x:xs) y = (x == y) \/ member xs y 
+member (x:xs) y = (x == y) \/ (member xs y)
 instance Eq a, Eq b => Eq (a,b) where 
   (u,v) == (x,y) = (u == x) & (v == y) 
 instance Eq a => Eq a where
