@@ -175,6 +175,15 @@ S <- Double("A"); //matched to "AA"
 
 ---
 
+          ## Macro PEGの基本的な性質
+          * 言語クラスをMPELと表現する
+          * L(G1) ∪L(G2) ∈MPEL
+          * L(G1) ∩L(G2) ∈MPEL
+          * L(not(G1)) ∈ MMEPL
+          * 証明はFord04と同様
+
+---
+
           ## Macro PEGによる回文の表現
           * Macro PEGでは簡単に表現できる
             * 引数にこれまでマッチした文字列を逆順で積み込む
@@ -287,29 +296,7 @@ Check(Left, Right, Exp)
 
 ---
 
-          ## Higher Order PEG
-          * Add **Rule Constructor**
-          * isn't it Higer Order PEG turing complete?
-            * I believe Higer Order PEG is not turing complete
-            * there is no proof
-
-```
-S <- TWICE(F1, "x") // "xxxx"
-TWICE(F, X) <- F(F(X))
-F1(x) <- x x 
-```
-
----
-
-          ## Formal language should not be turing complete
-          * if possible
-          * too powerful language make it difficult to veify language properties
-          * less-powerful langauge is important
-            * Regex VS. CFG (or PEG)
-
----
-
-          ## Macro PEG ←→ Parser Combinator [correspondence](https://github.com/kmizu/macro_peg/blob/master/src/main/scala/com/github/kmizu/macro_peg/combinator/MacroParsers.scala)
+          ## Macro PEGとパーザコンビネータの[対応関係](https://github.com/kmizu/macro_peg/blob/master/src/main/scala/com/github/kmizu/macro_peg/combinator/MacroParsers.scala)
 
 ---
 
@@ -333,8 +320,8 @@ x * x; // parse error
 
 ---
 
-          ## 後方参照付きMacro PEGが表現できるもの
-          * [variable declaration dependent syntax](https://github.com/kmizu/macro_peg/blob/fd4525f86d30b3dd6573f33deebdc5f00a08c9a3/src/test/scala/com/github/kmizu/macro_peg/MacroParsersSpec.scala#L73-L91)
+          ## 後方参照付きMacro PEGが表現できるもの(1)
+          * [変数宣言に依存する構文](https://github.com/kmizu/macro_peg/blob/fd4525f86d30b3dd6573f33deebdc5f00a08c9a3/src/test/scala/com/github/kmizu/macro_peg/MacroParsersSpec.scala#L73-L91)
 
 ```
 object L {
@@ -355,7 +342,8 @@ object L {
 
 ---
 
-          ## Macro PEG with back reference can express [min-xml](https://github.com/kmizu/macro_peg/blob/fd4525f86d30b3dd6573f33deebdc5f00a08c9a3/src/test/scala/com/github/kmizu/macro_peg/MacroParsersSpec.scala#L60-L72)
+          ## 後方参照付きMacro PEGが表現できるもの(2)
+          * [min-xml](https://github.com/kmizu/macro_peg/blob/fd4525f86d30b3dd6573f33deebdc5f00a08c9a3/src/test/scala/com/github/kmizu/macro_peg/MacroParsersSpec.scala#L60-L72)
 
 ```scala
 object MinXML {
@@ -368,6 +356,14 @@ object MinXML {
 
 ---
           # 関連研究
+          * Matsumura, T. and Kuramitsu, K.(2016): 
+            * PEGに対して実用的なプログラミング言語を扱うための拡張を提案
+          * Warth, A., Douglass, J. R. and Millstein, T(2008):
+            * PEGに対して左再帰拡張を提案
+            * Packrat Parsingのアルゴリズムを利用
+            * 既に不具合が発見されている
+              * 白田，木山，芦原(2011)
+            * 左再帰をどこまで扱えるか不明
 
 ---
 
