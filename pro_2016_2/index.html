@@ -68,13 +68,14 @@
               * プログラミング言語のアクセス修飾子等
             * 回文（Pure PEGでは表現できなさそう）
           * Macro PEGはパーザコンビネータと綺麗に対応が付く
+          * Macro PEGでは表現困難なパターン
 
 ---
 
           ## PEG（Parsing Expression Grammar）
           * Bryan Fordによって2004年に提案された形式文法
           * Yet another formal language by Bryan Ford(2004)
-          * 源流をたどるとBirmanのTDPL（1970s）
+          * 源流はBirmanのTDPL（1970s）
 
 ---
 
@@ -86,26 +87,30 @@
           * 一部の文脈依存言語を解析可能
             * a^n b^n c^n（n≧1）
           * PEL ⊃CFL かどうかはOpen Problem
+           * PEL: Parsing Expression Language
+           * CFL: Context Free Language
 
 ---
 
-          ## PEGの基本（１） - atomic parsing expression
-          * terminal symbol such as `"foo"`
-          * nonterminal symbol such as `N`
-          * empty string: ε
+          ## PEGの基本（１）
+          * 空文字列: ε or ""
+          * 文字列リテラル: " "
+          * 文字クラス: [ ]
+          * 非終端記号: N
 
 ---
 
           ## PEGの基本（２）
-          * Sequence: e1 e2
-          * Ordered Choice: e1 / e2
-          * Zero-or-more: e*
-          * Optional: e?
+          * 連接: e1 e2
+          * 優先度付き選択: e1 / e2
+          * 0回以上の繰り返し: e*
+          * 1回以上の繰り返し: e+
+          * 0回または1回の出現: e?
           * And-predicate: &e
           * Not-predicate: !e
 
 ---
-         ## PEGの基本（３）
+         ## PEGによる四則演算言語の表現
 
 ```
 E <- A ("+" A / "-" A)*
@@ -115,7 +120,7 @@ P <- "(" E ")" / [1-9]+
 
 ---
 
-          ## PEGは a^n b^n c^n を表現可能
+          ## PEGによる文脈依存言語(a^n b^n c^n)の表現
           * CFGでは表現不可
           * ¬(CFL ⊃PEL)
 
@@ -127,26 +132,41 @@ B ← b B? c
 
 ---
 
-          ## Can PEG express palindrome?
-          * it is unknown
-          * but it is thought that PEG cannot express palindrome
+          ## PEGで回文を表現できるか
+          * 直観的な定義ではうまく表現できない
+
+```
+S <- "a" S "a" / "b" S "b" / ""
+```
+          * 実際に表現不可能かは不明
 
 ---
 
-          ## PEG cannot express some context sensitivties
-          * indentation-based layout syntax
-          * variable-declaration dependent syntax
-          * etc.
-          * Some extensions are required!
+          ## PEGの問題点(1) - 文法の再利用性 -
+
+```
+Spacing <- " " / "\t" / "\r" / "\n"
+Expression <- Primary (
+"+" Spacing Primary
+"-" Spacing Primary
+)*
+Primary <- "(" Spacing Expression ")" Spacing /
+NumberLiteral Spacing /
+StringLiteral Spacing
+NumberLiteral <- "0" | [1-9][0-9]*
+StringLiteral <- "\""
+("#{" Expression "}" / !"\"" .)*
+"\""
+```
 
 ---
 
           ## Macro PEG
-          * I proposed 
-          * with macro-like rules
-          * inspired by:
+          * 今回提案する手法
+          * マクロのような引数を取る規則を追加する
+          * Macro Grammarの影響
             * [Grammars with macro-like productions](http://dl.acm.org/citation.cfm?id=1440085)
-          * evaluation strategy: call-by-name
+          * 引数付き規則の評価戦略: 名前呼び出し
 
 ```
 Double(e) <- e e;
@@ -155,9 +175,9 @@ S <- Double("A"); //matched to "AA"
 
 ---
 
-          ## Palindrome
-          * it is thought that PEG cannot express palindrome
-          * Macro PEG **can** express palindrome
+          ## Macro PEGによる回文の表現
+          * Macro PEGでは簡単に表現できる
+            * 引数にこれまでマッチした文字列を逆順で積み込む
           * (Macro PEL) ⊃CFL?
 
 ```
@@ -176,16 +196,17 @@ P(r) <- "a" P("a" r)) / "b" P("b" r) / r
 
 ---
 
-          ## 'sequence without repetition' language in Macro PEG
+          ## Macro PEGによる順列言語の表現
+          * `AlreadyLooked`が表のような役目を果たす
 
 ```
 S = Modifiers(!"", "") !.;
-Modifiers(AlreadyLooked, Scope) = (!AlreadyLooked) (
-    &(Scope) Token("public") Modifiers(AlreadyLooked / "public", "public")
-  / &(Scope) Token("protected") Modifiers(AlreadyLooked / "protected", "protected")
-  / &(Scope) Token("private") Modifiers(AlreadyLooked / "private", "private")
-  / Token("static") Modifiers(AlreadyLooked / "static", Scope)
-  / Token("final") Modifiers(AlreadyLooked / "final", Scope)
+Modifiers(AlreadyLooked) = (!AlreadyLooked) (
+    Token("public") Modifiers(AlreadyLooked / "public")
+  / Token("protected") Modifiers(AlreadyLooked / "protected")
+  / Token("private") Modifiers(AlreadyLooked / "private")
+  / Token("static") Modifiers(AlreadyLooked / "static")
+  / Token("final") Modifiers(AlreadyLooked / "final")
   / ""
 );
 Token(t) = t Spacing;
@@ -194,12 +215,12 @@ Spacing = " "*;
 
 ---
 
-          ## Macro PEG can express [addition and multiplication](https://github.com/kmizu/macro_peg/blob/fd4525f86d30b3dd6573f33deebdc5f00a08c9a3/src/main/scala/com/github/kmizu/macro_peg/MacroPEGRunner.scala#L19-L47)
+          ## Macro PEGによる[加算の表現](https://github.com/kmizu/macro_peg/blob/fd4525f86d30b3dd6573f33deebdc5f00a08c9a3/src/main/scala/com/github/kmizu/macro_peg/MacroPEGRunner.scala#L19-L47)
+          * `1`の出現数nを整数nとみなす
+            * e.g. 1 = 1, 11 = 2, 111 = 3
 
 ```
-S = (Plus0("") / Mul0("")) !.;
-// the number of occurence of '1 represents a natural number.
-// a+b=c
+S = (Plus0("")) !.;
 Plus0(Left) = Plus1(Left, "") / &(Left "1") Plus0(Left "1");
 
 Plus1(Left, Right)
@@ -209,25 +230,13 @@ Plus1(Left, Right)
 Plus2(Left, Right)
   = Left "+" Right "=" Left Right;
 
-// check a*b=c
-Mul0(Left)
-  = &(Left "*") Mul1(Left, "", "")
-  / &(Left "1") Mul0(Left "1");
-
-Mul1(Left, Right, Prod)
-  = &(Left "*" Right "=") Mul2(Left, Right, Prod)
-  / &(Left "*" Right "1") Mul1(Left, Right "1", Prod Left);
-
-Mul2(Left, Right, Prod)
-  = Left "*" Right "=" Prod;
-
 "1+1=11", "111+11=11111", "111+1=11111" // should match
 "111*11=111111", "11*111=111111", "1*111=1" // should match
 ```
 
 ---
 
-          ## Macro PEG can express [subtraction](https://github.com/kmizu/macro_peg/blob/fd4525f86d30b3dd6573f33deebdc5f00a08c9a3/src/main/scala/com/github/kmizu/macro_peg/MacroPEGRunner.scala#L66-L82)
+          ## Macro PEGによる[減算の表現](https://github.com/kmizu/macro_peg/blob/fd4525f86d30b3dd6573f33deebdc5f00a08c9a3/src/main/scala/com/github/kmizu/macro_peg/MacroPEGRunner.scala#L66-L82)
 
 ```
 S = ReadRight("") !.;
@@ -248,42 +257,27 @@ Check(Right, Diff)
 
 ---
 
-          ## Macro PEG can express [exponent](https://github.com/kmizu/macro_peg/blob/fd4525f86d30b3dd6573f33deebdc5f00a08c9a3/src/main/scala/com/github/kmizu/macro_peg/MacroPEGRunner.scala#L88-L125)
+          ## Macro PEGで[指数の計算](https://github.com/kmizu/macro_peg/blob/fd4525f86d30b3dd6573f33deebdc5f00a08c9a3/src/main/scala/com/github/kmizu/macro_peg/MacroPEGRunner.scala#L88-L125)
 
 ```
 S = ReadLeft("", "") !.;
-// the number of occurence of '1 represents a natural number.
-// |Seq| is the length of a sequence Seq.
-// ^ is exponent operator
-// ReadLeft("", "") checks input is a correct expression a^b=c.
 
-// Read a.
-// LeftAsOnes is a sequence of "1" where |LeftAsOnes| = |a|.
-// LeftAsDots is a sequence of . where |LeftAsDots| = |a|.
 ReadLeft(LeftAsOnes, LeftAsDots)
   = &(LeftAsOnes "1") ReadLeft(LeftAsOnes "1", LeftAsDots .)
   / &(LeftAsOnes "^") ComputePadding(LeftAsOnes, LeftAsDots, "");
 
-// Compute Padding which is a sequene of .
-// where |Padding| + |LeftAsDots| = |Input|
 ComputePadding(LeftAsOnes, LeftAsDots, Padding)
   = &(Padding LeftAsDots .) ComputePadding(LeftAsOnes, LeftAsDots, Padding .)
   / &(Padding LeftAsDots !.) ReadRight(LeftAsOnes, Padding, "", "1");
 
-// Read b.
-// Exp = a^Right.
 ReadRight(Left, Padding, Right, Exp)
   = &(Left "^" Right "1") Multiply(Left, Padding, Right "1", Exp, "", "")
   / &(Left "^" Right "=") Check(Left, Right, Exp);
 
-// Compute Left * OldExp.
-// This adds OldExp Left times into Exp.
-// I is a loop counter.
 Multiply(Left, Padding, Right, OldExp, Exp, I)
   = &(Padding I .) Multiply(Left, Padding, Right, OldExp, Exp OldExp, I .)
   / &(Padding I !.) ReadRight(Left, Padding, Right, Exp);
 
-// Check whole input.
 Check(Left, Right, Exp)
   = Left "^" Right "=" Exp;
 
@@ -319,9 +313,9 @@ F1(x) <- x x
 
 ---
 
-          ## Macro PEG cannot express
-          * variable declaration dependent syntax
-          * back reference extension resolve such problems
+          ## Macro PEGが表現できない文法
+          * 変数宣言に依存する構文
+            * 後方参照のような拡張によって解決可能
 
 ```
 int x;
@@ -334,12 +328,12 @@ x * x; // parse error
 
 ---
 
-          ## Macro PEG with back reference
-          * is implemented as [`EvalCC` combinator](https://github.com/kmizu/macro_peg/blob/fd4525f86d30b3dd6573f33deebdc5f00a08c9a3/src/main/scala/com/github/kmizu/macro_peg/combinator/MacroParsers.scala#L52-L61)
+          ## 後方参照付きMacro PEG
+          * [`EvalCC` コンビネータ](https://github.com/kmizu/macro_peg/blob/fd4525f86d30b3dd6573f33deebdc5f00a08c9a3/src/main/scala/com/github/kmizu/macro_peg/combinator/MacroParsers.scala#L52-L61)として実装
 
 ---
 
-          ## Macro PEG with back reference can express
+          ## 後方参照付きMacro PEGが表現できるもの
           * [variable declaration dependent syntax](https://github.com/kmizu/macro_peg/blob/fd4525f86d30b3dd6573f33deebdc5f00a08c9a3/src/test/scala/com/github/kmizu/macro_peg/MacroParsersSpec.scala#L73-L91)
 
 ```
@@ -373,22 +367,17 @@ object MinXML {
 ```
 
 ---
-
-          ## Expressiveness of Macro PEG
-          * stronger than context free language probably
-          * Macro PEG VS. Boolean Grammer
-          * Macro PEG VS. IO Macro Grammar
-          * Macro PEG VS. OI Macro Grammar
+          # 関連研究
 
 ---
 
-          # Conclusion
-          * I proposed Macro PEG
-            * PEG with macro-like rules
-          * Macro PEG has interesting properties
-          * extensions to Macro PEG are easily implemented
-          * expressivenss of Macro PEG is unknown
-          * creating formal language is interesting!
+          # まとめ
+          * Macro PEGを提案
+            * PEGに引数付き規則を追加したもの
+
+          * 和集合・積集合・補集合に関して閉じている
+          * Macro PEGとパーザコンビネータは綺麗に対応する
+          * Macro PEGの表現力は不明
 			  </script></section>
       </div>
 		</div>
