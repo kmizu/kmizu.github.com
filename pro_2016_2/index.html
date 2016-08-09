@@ -52,66 +52,118 @@
 			<!-- Any section element inside of this container is displayed as a slide -->
 			<div class="slides">
 				<section data-markdown data-separator="^\n---$"><script type="text/template">
-          ## PEGのパラメタ付き拡張Macro PEGの提案
+          ## PEGのパラメタ付き拡張
+          ## Macro PEGの提案
           ## 水島 宏太（株式会社ドワンゴ）
 
 ---
 
-          ## この発表について
-          * PEGについて
-          * Macro PEGを提案
-            * PEGの規則が引数を取れるように拡張したもの
-          * Macro PEGは文法の再利用性を向上させる
-            * 引数付き規則
-          * Macro PEGはいくつかのパターンを簡潔に表現できる
-            * 順列言語
-              * プログラミング言語のアクセス修飾子等
-            * 回文（Pure PEGでは表現できなさそう）
-          * Macro PEGはパーザコンビネータと綺麗に対応が付く
-          * Macro PEGでは表現困難なパターン
-          * 関連研究
+## この発表について
+
+* Macro PEGを提案
+  * PEGの規則が引数を取れるように拡張したもの
+* Macro PEGは文法の再利用性を向上させる
+  * 引数付き規則
+* Macro PEGはいくつかのパターンを簡潔に表現できる
+* Macro PEGとパーザコンビネータの対応関係
+* Macro PEGでは表現困難なパターン
+* 関連研究
 
 ---
 
-          ## PEG（Parsing Expression Grammar）
-          * Bryan Fordによって2004年に提案された形式文法
-          * Yet another formal language by Bryan Ford(2004)
-          * 源流はBirmanのTDPL（1970s）
+## PEG
+## （Parsing Expression Grammar）
+
+* Bryan Fordによって2004年に提案された形式文法
+* Yet another formal language by Bryan Ford(2004)
+* 源流はBirmanのTDPL（1970s）
 
 ---
 
-          ## PEGの特徴
-          * 分析的形式文法
-            * <-> 生成文法
-          * Packrat Parsingで線形時間で解析可能
-          * 任意の決定的文脈自由言語を解析可能
-          * 一部の文脈依存言語を解析可能
-            * a^n b^n c^n（n≧1）
-          * PEL ⊃CFL かどうかはOpen Problem
-           * PEL: Parsing Expression Language
-           * CFL: Context Free Language
+## PEGの特徴
+
+* 分析的形式文法
+  * ←→ 生成文法
+* Packrat Parsingで線形時間で解析可能
+* 任意の決定的文脈自由言語を解析可能
+* 一部の文脈依存言語を解析可能
+  * a^n b^n c^n（n≧1）
+* PEL ⊃CFL かどうかはOpen Problem
+  * PEL: Parsing Expression Language
+  * CFL: Context Free Language
 
 ---
 
-          ## PEGの基本（１）
-          * 空文字列: ε or ""
-          * 文字列リテラル: " "
-          * 文字クラス: [ ]
-          * 非終端記号: N
+## PEGの基本（１）
+
+* 空文字列: ε or ""
+* 文字列リテラル: " "
+* 文字クラス: [ ]
+* 非終端記号: N
 
 ---
 
-          ## PEGの基本（２）
-          * 連接: e1 e2
-          * 優先度付き選択: e1 / e2
-          * 0回以上の繰り返し: e*
-          * 1回以上の繰り返し: e+
-          * 0回または1回の出現: e?
-          * And-predicate: &e
-          * Not-predicate: !e
+## PEGの基本（２）
+
+* 連接: e1 e2
+* 優先度付き選択: e1 / e2
+* 0回以上の繰り返し: e*
+* 1回以上の繰り返し: e+
+* 0回または1回の出現: e?
+* And-predicate: &e
+* Not-predicate: !e
 
 ---
-         ## PEGによる四則演算言語の表現
+
+## PEGの基本（３） - 構文糖衣の除去
+
+* 1回以上の繰り返し: `e+ ==> e e*`
+
+* 0回または1回の出現: `e? ==> e / ""`
+
+* and-predicateの除去: `&e ==> !!e`
+
+* 0回以上の繰り返しの除去: 
+  * `e* ==> N' where N' <- e N' / ""`
+
+* 文字クラスの除去: `[abc] ==> "a" / "b" / "c"`
+
+---
+
+## PEGとパーザコンビネータ（１）
+
+```scala
+/* Scala code */
+object PEG {
+  type Parser = String => Option[String]
+  implicit class Extension(a: => Parser) {
+    def ~(b: => Parser): Parser = in => a(in).flatMap(b) // e1 e2
+    def /(b: => Parser): Parser = in => a(in).orElse(b(in)) // e1 / e2
+    def unary_! : Parser = in => a(in) match { // !e
+      case Some(_) => None
+      case None => Some(in)
+    }
+    def s(literal: String): Parser = in => // " "
+      if(in.startsWith(literal)) Some(in.substring(literal.length))
+      else None
+  }
+}
+```
+
+---
+
+## PEGとパーザコンビネータ（2）
+* PEGとパーザコンビネータ（の単純な実装）が対応
+
+```scala
+/* Scala code */
+import PEG._
+val S: Parser = (s("Hello, ") / s("Good Morning, ")) ~ s("Taro")
+```
+
+---
+
+## PEGによる四則演算言語の表現
 
 ```
 S <- (" " / "\t" / "\r\n" "\r" / "\n)*
@@ -123,9 +175,10 @@ N <- [1-9]+
 
 ---
 
-          ## PEGによる文脈依存言語(a^n b^n c^n)の表現
-          * CFGでは表現不可
-          * ¬(CFL ⊃PEL)
+## PEGによる文脈依存言語
+### (a^n b^n c^n)の表現
+* CFGでは表現不可
+  * ¬(CFL ⊃PEL)
 
 ```
 S ← &(A !"b") "a"+ B !.
@@ -135,8 +188,9 @@ B ← "b" B? "c"
 
 ---
 
-          ## PEGの問題点 - 文法の再利用性 -
-          * Spacingがあちこちに出てくる
+## PEGの問題点 - 文法の再利用性
+
+* Spacingがあちこちに出てくる
 
 ```
 Spacing <- " " / "\t" / "\r" / "\n"
@@ -155,18 +209,21 @@ StringLiteral <- "\""
 
 ---
 
-          ## PEGで表現困難な文法(1) - 回文
-          * 直観的な定義ではうまく表現できない
+## PEGで表現困難な文法(1) - 回文
+
+* 直観的な定義ではうまく表現できない
 
 ```
 S <- "a" S "a" / "b" S "b" / ""
 ```
-          * 実際に表現不可能かは不明
+* 実際に表現不可能かは不明
 
 ---
-          ## PEGで表現困難な文法(2) - 順列言語
-          * 全パターンを書き下せば表現可能だが
-            あまり現実的でない
+
+## PEGで表現困難な文法(2) - 順列言語
+
+* 全パターンを書き下せば表現可能だが
+  あまり現実的でない
 
 ```
 public static final //OK
@@ -177,60 +234,47 @@ public public final // NG
 
 ---
 
-          ## Macro PEG
-          * 今回提案する手法
-          * マクロのような引数を取る規則を追加する
-          * Macro Grammar(Fischer1968)を参考に
-            * [Grammars with macro-like productions](http://dl.acm.org/citation.cfm?id=1440085)
-          * 引数付き規則の評価戦略: 名前呼び出し
+## Macro PEG
+
+* 今回提案する手法
+* マクロのような引数を取る規則を追加する
+* Macro Grammar(Fischer1968)を参考に
+  * [Grammars with macro-like productions](http://dl.acm.org/citation.cfm?id=1440085)
+* 引数付き規則の評価戦略: 名前呼び出し
 
 ```
-Double(e) <- e e;
+Double(e) <- e e
 S <- Double("A"); //matched to "AA"
 ```
 
 ---
 
-          ## Macro PEGの基本的な性質
-          * 言語クラスをMPELと表現する
-          * G1, G2をMacro PEGのインスタンスとする
-          * L(G1) ∪L(G2) ∈MPEL
-          * L(G1) ∩L(G2) ∈MPEL
-          * L(complement(G1)) ∈ MMEPL
-          * 証明はFord04と同様
+## Macro PEGの基本的な性質
+
+* Macro PEGの言語クラスをMPELと表現する
+* G1, G2をMacro PEGのインスタンスとする
+* L(G1) ∪L(G2) ∈MPEL
+* L(G1) ∩L(G2) ∈MPEL
+* complement(L(G1)) ∈ MPEL
+* 証明はFord04と同様
 
 ---
 
-          ## Macro PEGによる文法の再利用性の改善(1)
+## Macro PEGによる文法の再利用性の改善(1)
 
 ```
 Token(terminal) <- terminal Spacing
 Spacing <- " " / "\t" / "\r" / "\n"
+```
+
+```
 Expression <- Primary (
   Token("+") Primary / Token("-") Primary
 )*
 Primary <- Token("(") Expression Token(")") /
 Token(NumberLiteral) /
-Token(StringLiteral) /
-NumberLiteral <- "0" | [1-9][0-9]*
-StringLiteral <- "\""
-("#{" Expression "}" / !"\"" .)*
-"\""
-```
+Token(StringLiteral)
 
----
-
-          ## Macro PEGによる文法の再利用性の改善(2)
-
-```
-RepSep(Separator, Element) <-
-  Element (Separator Element)*
-Token(terminal) <- terminal Spacing
-Spacing <- " " / "\t" / "\r" / "\n"
-Expression <- RepSep(Token("+") / Token("-"), Primary)
-Primary <- Token("(") Expression Token(")") /
-           Token(NumberLiteral) /
-           Token(StringLiteral) /
 NumberLiteral <- "0" | [1-9][0-9]*
 StringLiteral <- "\""
   ("#{" Expression "}" / !"\"" .)*
@@ -239,10 +283,33 @@ StringLiteral <- "\""
 
 ---
 
-          ## Macro PEGによる回文の表現
-          * Macro PEGでは簡単に表現できる
-            * 引数にこれまでマッチした文字列を逆順で積み込む
-          * (Macro PEL) ⊃CFL?
+## Macro PEGによる文法の再利用性の改善(2)
+
+```
+Token(terminal) <- terminal Spacing
+RepSep(Separator, Element) <- Element (Separator Element)*
+Spacing <- " " / "\t" / "\r" / "\n"
+```
+
+```
+Expression <- RepSep(Token("+") / Token("-"), Primary)
+Primary <- Token("(") Expression Token(")") /
+           Token(NumberLiteral) /
+           Token(StringLiteral)
+
+NumberLiteral <- "0" | [1-9][0-9]*
+StringLiteral <- "\""
+  ("#{" Expression "}" / !"\"" .)*
+"\""
+```
+
+---
+
+## Macro PEGによる回文の表現
+
+* Macro PEGでは簡単に表現できる
+* 引数にこれまでマッチした文字列を逆順で積み込む
+* (Macro PEL) ⊃CFL?
 
 ```
 S <- P("") !.
@@ -251,11 +318,12 @@ P(r) <- "a" P("a" r)) / "b" P("b" r) / r
 
 ---
 
-          ## Macro PEGによる順列言語の表現
-          * `AlreadyLooked`が表のような役目を果たす
+## Macro PEGによる順列言語の表現
+
+* `AlreadyLooked`が表のような役目を果たす
 
 ```
-S = Modifiers(!"", "") !.;
+S = Modifiers(!"", "") !.
 Modifiers(AlreadyLooked) = (!AlreadyLooked) (
     Token("public") Modifiers(AlreadyLooked / "public")
   / Token("protected") Modifiers(AlreadyLooked / "protected")
@@ -263,16 +331,17 @@ Modifiers(AlreadyLooked) = (!AlreadyLooked) (
   / Token("static") Modifiers(AlreadyLooked / "static")
   / Token("final") Modifiers(AlreadyLooked / "final")
   / ""
-);
-Token(t) = t Spacing;
-Spacing = " "*;
+)
+Token(t) = t Spacing
+Spacing = " "*
 ```
 
 ---
 
-          ## Macro PEGによる[加算の表現](https://github.com/kmizu/macro_peg/blob/fd4525f86d30b3dd6573f33deebdc5f00a08c9a3/src/main/scala/com/github/kmizu/macro_peg/MacroPEGRunner.scala#L19-L47)
-          * `1`の出現数nを整数nとみなす
-            * e.g. 1 = 1, 11 = 2, 111 = 3
+## Macro PEGによる[加算の表現](https://github.com/kmizu/macro_peg/blob/fd4525f86d30b3dd6573f33deebdc5f00a08c9a3/src/main/scala/com/github/kmizu/macro_peg/MacroPEGRunner.scala#L19-L47)
+
+* `1`の出現数nを整数nとみなす
+   * e.g. 1 = 1, 11 = 2, 111 = 3
 
 ```
 S = (Plus0("")) !.;
@@ -291,7 +360,7 @@ Plus2(Left, Right)
 
 ---
 
-          ## Macro PEGによる[減算の表現](https://github.com/kmizu/macro_peg/blob/fd4525f86d30b3dd6573f33deebdc5f00a08c9a3/src/main/scala/com/github/kmizu/macro_peg/MacroPEGRunner.scala#L66-L82)
+## Macro PEGによる[減算の表現](https://github.com/kmizu/macro_peg/blob/fd4525f86d30b3dd6573f33deebdc5f00a08c9a3/src/main/scala/com/github/kmizu/macro_peg/MacroPEGRunner.scala#L66-L82)
 
 ```
 S = ReadRight("") !.;
@@ -312,7 +381,7 @@ Check(Right, Diff)
 
 ---
 
-          ## Macro PEGで[指数の計算](https://github.com/kmizu/macro_peg/blob/fd4525f86d30b3dd6573f33deebdc5f00a08c9a3/src/main/scala/com/github/kmizu/macro_peg/MacroPEGRunner.scala#L88-L125)
+## Macro PEGで[指数の計算](https://github.com/kmizu/macro_peg/blob/fd4525f86d30b3dd6573f33deebdc5f00a08c9a3/src/main/scala/com/github/kmizu/macro_peg/MacroPEGRunner.scala#L88-L125)
 
 ```
 S = ReadLeft("", "") !.;
@@ -342,14 +411,27 @@ Check(Left, Right, Exp)
 
 ---
 
-          ## Macro PEGとパーザコンビネータの[対応関係](https://github.com/kmizu/macro_peg/blob/master/src/main/scala/com/github/kmizu/macro_peg/combinator/MacroParsers.scala)
-          * Macro PEGはパーザコンビネータで簡潔に表現可能 
+## Macro PEGとパーザコンビネータ
+
+```scala
+import PEG.
+def greet(person: Parser, message: Parser): Parser
+  = message ~ s(", ") ~ person
+val S: Parser = greet(s("Taro"), s("Hello") / s("Good Morning"))
+```
+
+* Macro PEGはパーザコンビネータの各規則に相当する関数が引数を持ったもの
+  * ただし、引数の型はParserに限定される
+    * 任意の値を引数に持てるのは強力過ぎる
 
 ---
 
-          ## Macro PEGが表現できない文法
-          * 変数宣言に依存する構文
-            * 後方参照のような拡張によって解決可能
+## Macro PEGが表現できない文法
+
+* 変数宣言に依存する構文
+  * Cのtypedef
+* XMLの開きタグと閉じタグ名の対応チェック
+* インデント依存文法
 
 ```
 int x;
@@ -362,65 +444,37 @@ x * x; // parse error
 
 ---
 
-          ## 後方参照付きMacro PEG
-          * [`EvalCC` コンビネータ](https://github.com/kmizu/macro_peg/blob/fd4525f86d30b3dd6573f33deebdc5f00a08c9a3/src/main/scala/com/github/kmizu/macro_peg/combinator/MacroParsers.scala#L52-L61)として実装
+# 関連研究（１）
+
+* Matsumura, T. and Kuramitsu, K.(2016): 
+* PEGに対して実用的なプログラミング言語を扱うための拡張を提案
+  * 変数宣言依存
+  * インデント依存文法
+  * 本発表にこの研究の拡張を適用することも可能
 
 ---
 
-          ## 後方参照付きMacro PEGが表現できるもの(1)
-          * [変数宣言に依存する構文](https://github.com/kmizu/macro_peg/blob/fd4525f86d30b3dd6573f33deebdc5f00a08c9a3/src/test/scala/com/github/kmizu/macro_peg/MacroParsersSpec.scala#L73-L91)
-
-```
-object L {
-  lazy val Spacing: P[Any] = ("\r" | "\t" | " " | "\r" | "\n").*
-  def OPEN: P[Any] = "(" ~ Spacing
-  def CLOSE: P[Any] = ")" ~ Spacing
-  def EQ: P[Any] = "=" ~ Spacing
-  def SEMI_COLON: P[Any] = string(";") ~ Spacing
-  def VAL: P[Any] = "val" ~ Spacing
-  lazy val S: P[Any] = Statements(!"") ~ !any
-  def Statements(table: P[Any]): P[Any] = VAL ~ Identifier.evalCC{i => EQ ~ Expression(table) ~ SEMI_COLON ~ refer(Statements(table | i)).? } / Expression(table) ~ SEMI_COLON ~ refer(Statements(table)).?
-  def Expression(table: P[Any]): P[Any] = refer(Primary(table)) ~ (range(Seq('+','-','*','/')) ~ Spacing ~ refer(Primary(table))).*
-  def Primary(table: P[Any]): P[Any] =  table.and ~ Identifier | IntegerLiteral | (OPEN ~ refer(Expression(table)) ~ CLOSE)
-  lazy val Identifier: P[Any] = range('a'to'z','A'to'Z',Seq('_')) ~ range('a'to'z','A'to'Z','0'to'9',Seq('_')).* ~ Spacing
-  lazy val IntegerLiteral: P[Any] = range('0'to'9').+ ~ Spacing
-}
-```
+# 関連研究（２）
+* Warth, A., Douglass, J. R. and Millstein, T(2008):
+* PEGに対する左再帰拡張を提案
+  * Packrat Parsingのアルゴリズムを利用
+  * 不具合が発見済み
+    * 白田，木山，芦原(2011)
+* 左再帰をどこまで扱えるか不明
 
 ---
 
-          ## 後方参照付きMacro PEGが表現できるもの(2)
-          * [min-xml](https://github.com/kmizu/macro_peg/blob/fd4525f86d30b3dd6573f33deebdc5f00a08c9a3/src/test/scala/com/github/kmizu/macro_peg/MacroParsersSpec.scala#L60-L72)
+# 今後の展望
 
-```scala
-object MinXML {
-  lazy val I: P[Any] = range('a'to'z','A'to'Z', Seq('_')) ~ range('a'to'z','A'to'Z',Seq('_'),'0'to'9').*
-  lazy val S: P[Any] = "<" ~ I.evalCC {tag =>
-    ">" ~ S.* ~ "</" ~ tag ~ ">"
-  }
-}
-```
+* Macro PEGによって表現可能/表現が簡単な文法の例を探す
+  * 実際のプログラミング言語の文法には色々あるはず
+* Macro PEGに対する拡張
+  *  Matsumura, T. and Kuramitsu, K.(2016)の適用
+* Macro PEGの（入力長に対する）最悪計算量の考察
+  * Macro PEGの「ちゃんとした」計算モデルが必要
+* Higer Order Macro PEG
+  * chainlのようなコンビネータを表現するのに必要
 
----
-          # 関連研究
-          * Matsumura, T. and Kuramitsu, K.(2016): 
-            * PEGに対して実用的なプログラミング言語を扱うための拡張を提案
-          * Warth, A., Douglass, J. R. and Millstein, T(2008):
-            * PEGに対して左再帰拡張を提案
-            * Packrat Parsingのアルゴリズムを利用
-            * 不具合が発見されている
-              * 白田，木山，芦原(2011)
-            * 左再帰をどこまで扱えるか不明
-
----
-
-          # まとめ
-          * Macro PEGを提案
-            * PEGに引数付き規則を追加したもの
-
-          * 和集合・積集合・補集合に関して閉じている
-          * Macro PEGとパーザコンビネータは綺麗に対応する
-          * Macro PEGの表現力は不明
 			  </script></section>
       </div>
 		</div>
