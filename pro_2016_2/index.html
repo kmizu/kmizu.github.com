@@ -338,6 +338,22 @@ Spacing = " "*
 
 ---
 
+## Macro PEGによるネストしたクラスの表現
+
+```
+TopLevel <- ClassDeclaration(!"") *
+ClassDeclaration(S) <-
+( !S ClassBody(!"")
+/ "static" ClassBody("")
+)
+ClassBody(S) <-
+( MemberDeclaration(S)
+/ ClassDeclaration(S)
+)*
+```
+
+---                                                            ---
+
 ## Macro PEGによる[加算の表現](https://github.com/kmizu/macro_peg/blob/fd4525f86d30b3dd6573f33deebdc5f00a08c9a3/src/main/scala/com/github/kmizu/macro_peg/MacroPEGRunner.scala#L19-L47)
 
 * `1`の出現数nを整数nとみなす
@@ -381,36 +397,6 @@ Check(Right, Diff)
 
 ---
 
-## Macro PEGで[指数の計算](https://github.com/kmizu/macro_peg/blob/fd4525f86d30b3dd6573f33deebdc5f00a08c9a3/src/main/scala/com/github/kmizu/macro_peg/MacroPEGRunner.scala#L88-L125)
-
-```
-S = ReadLeft("", "") !.;
-
-ReadLeft(LeftAsOnes, LeftAsDots)
-  = &(LeftAsOnes "1") ReadLeft(LeftAsOnes "1", LeftAsDots .)
-  / &(LeftAsOnes "^") ComputePadding(LeftAsOnes, LeftAsDots, "");
-
-ComputePadding(LeftAsOnes, LeftAsDots, Padding)
-  = &(Padding LeftAsDots .) ComputePadding(LeftAsOnes, LeftAsDots, Padding .)
-  / &(Padding LeftAsDots !.) ReadRight(LeftAsOnes, Padding, "", "1");
-
-ReadRight(Left, Padding, Right, Exp)
-  = &(Left "^" Right "1") Multiply(Left, Padding, Right "1", Exp, "", "")
-  / &(Left "^" Right "=") Check(Left, Right, Exp);
-
-Multiply(Left, Padding, Right, OldExp, Exp, I)
-  = &(Padding I .) Multiply(Left, Padding, Right, OldExp, Exp OldExp, I .)
-  / &(Padding I !.) ReadRight(Left, Padding, Right, Exp);
-
-Check(Left, Right, Exp)
-  = Left "^" Right "=" Exp;
-
-"11^111=11111111", "11^=1", "1^11=1", "^11=", // should match
-"11^111=1111111",  "11^111=111111111" // should not match
-```
-
----
-
 ## Macro PEGとパーザコンビネータ
 
 ```scala
@@ -432,6 +418,7 @@ val S: Parser = greet(s("Taro"), s("Hello") / s("Good Morning"))
   * Cのtypedef
 * XMLの開きタグと閉じタグ名の対応チェック
 * インデント依存文法
+* etc
 
 ```
 int x;
@@ -450,6 +437,7 @@ x * x; // parse error
 * PEGに対して実用的なプログラミング言語を扱うための拡張を提案
   * 変数宣言依存
   * インデント依存文法
+  * 文脈依存キーワード
   * 本発表にこの研究の拡張を適用することも可能
 
 ---
