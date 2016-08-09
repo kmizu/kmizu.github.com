@@ -136,6 +136,7 @@ B ← "b" B? "c"
 ---
 
           ## PEGの問題点 - 文法の再利用性 -
+          * Spacingがあちこちに出てくる
 
 ```
 Spacing <- " " / "\t" / "\r" / "\n"
@@ -148,7 +149,7 @@ NumberLiteral Spacing /
 StringLiteral Spacing
 NumberLiteral <- "0" | [1-9][0-9]*
 StringLiteral <- "\""
-("#{" Expression "}" / !"\"" .)*
+  ("#{" Expression "}" / !"\"" .)*
 "\""
 ```
 
@@ -179,7 +180,7 @@ public public final // NG
           ## Macro PEG
           * 今回提案する手法
           * マクロのような引数を取る規則を追加する
-          * Macro Grammarの影響
+          * Macro Grammar(Fischer1968)を参考に
             * [Grammars with macro-like productions](http://dl.acm.org/citation.cfm?id=1440085)
           * 引数付き規則の評価戦略: 名前呼び出し
 
@@ -223,16 +224,16 @@ StringLiteral <- "\""
 
 ```
 RepSep(Separator, Element) <-
-  Elemnt (Separator Element)*
+  Element (Separator Element)*
 Token(terminal) <- terminal Spacing
 Spacing <- " " / "\t" / "\r" / "\n"
 Expression <- RepSep(Token("+") / Token("-"), Primary)
 Primary <- Token("(") Expression Token(")") /
-Token(NumberLiteral) /
-Token(StringLiteral) /
+           Token(NumberLiteral) /
+           Token(StringLiteral) /
 NumberLiteral <- "0" | [1-9][0-9]*
 StringLiteral <- "\""
-("#{" Expression "}" / !"\"" .)*
+  ("#{" Expression "}" / !"\"" .)*
 "\""
 ```
 
@@ -342,6 +343,7 @@ Check(Left, Right, Exp)
 ---
 
           ## Macro PEGとパーザコンビネータの[対応関係](https://github.com/kmizu/macro_peg/blob/master/src/main/scala/com/github/kmizu/macro_peg/combinator/MacroParsers.scala)
+          * Macro PEGはパーザコンビネータで簡潔に表現可能 
 
 ---
 
