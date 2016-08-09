@@ -113,9 +113,11 @@
          ## PEGによる四則演算言語の表現
 
 ```
-E <- A ("+" A / "-" A)*
-A <- P ("*" P / "/" P)*
-P <- "(" E ")" / [1-9]+
+S <- (" " / "\t" / "\r\n" "\r" / "\n)*
+E <- A ("+" S A / "-" S A)*
+A <- P ("*" S P / "/" S P)*
+P <- "(" S E ")" S / N
+N <- [1-9]+
 ```
 
 ---
@@ -125,24 +127,14 @@ P <- "(" E ")" / [1-9]+
           * ¬(CFL ⊃PEL)
 
 ```
-S ← &(A !b) a+ B !.
-A ← a A? b
-B ← b B? c
+S ← &(A !"b") "a"+ B !.
+A ← "a" A? "b"
+B ← "b" B? "c"
 ```
 
 ---
 
-          ## PEGで回文を表現できるか
-          * 直観的な定義ではうまく表現できない
-
-```
-S <- "a" S "a" / "b" S "b" / ""
-```
-          * 実際に表現不可能かは不明
-
----
-
-          ## PEGの問題点(1) - 文法の再利用性 -
+          ## PEGの問題点 - 文法の再利用性 -
 
 ```
 Spacing <- " " / "\t" / "\r" / "\n"
@@ -157,6 +149,28 @@ NumberLiteral <- "0" | [1-9][0-9]*
 StringLiteral <- "\""
 ("#{" Expression "}" / !"\"" .)*
 "\""
+```
+
+---
+
+          ## PEGで表現困難な文法(1) - 回文
+          * 直観的な定義ではうまく表現できない
+
+```
+S <- "a" S "a" / "b" S "b" / ""
+```
+          * 実際に表現不可能かは不明
+
+---
+          ## PEGで表現困難な文法(2) - 順列言語
+          * 全パターンを書き下せば表現可能だが
+            あまり現実的でない
+
+```
+public static final //OK
+public final static // OK
+static final public // OK
+public public final // NG
 ```
 
 ---
@@ -177,10 +191,49 @@ S <- Double("A"); //matched to "AA"
 
           ## Macro PEGの基本的な性質
           * 言語クラスをMPELと表現する
+          * G1, G2をMacro PEGのインスタンスとする
           * L(G1) ∪L(G2) ∈MPEL
           * L(G1) ∩L(G2) ∈MPEL
-          * L(not(G1)) ∈ MMEPL
+          * L(complement(G1)) ∈ MMEPL
           * 証明はFord04と同様
+
+---
+
+          ## Macro PEGによる文法の再利用性の改善(1)
+
+```
+Token(terminal) <- terminal Spacing
+Spacing <- " " / "\t" / "\r" / "\n"
+Expression <- Primary (
+  Token("+") Primary / Token("-") Primary
+)*
+Primary <- Token("(") Expression Token(")") /
+Token(NumberLiteral) /
+Token(StringLiteral) /
+NumberLiteral <- "0" | [1-9][0-9]*
+StringLiteral <- "\""
+("#{" Expression "}" / !"\"" .)*
+"\""
+```
+
+---
+
+          ## Macro PEGによる文法の再利用性の改善(2)
+
+```
+RepSep(Separator, Element) <-
+  Elemnt (Separator Element)*
+Token(terminal) <- terminal Spacing
+Spacing <- " " / "\t" / "\r" / "\n"
+Expression <- RepSep(Token("+") / Token("-"), Primary)
+Primary <- Token("(") Expression Token(")") /
+Token(NumberLiteral) /
+Token(StringLiteral) /
+NumberLiteral <- "0" | [1-9][0-9]*
+StringLiteral <- "\""
+("#{" Expression "}" / !"\"" .)*
+"\""
+```
 
 ---
 
@@ -193,15 +246,6 @@ S <- Double("A"); //matched to "AA"
 S <- P("") !.
 P(r) <- "a" P("a" r)) / "b" P("b" r) / r
 ```
-
----
-
-          ## 'sequence without repetition' language
-          * `{"abc", "acb", "bca", "bac", "cab", "cba"}`
-          * modifiers in some programmign languages
-          * "public static final", "public final static", ...
-          * grammar size in PEG: O(n!)
-            * n is kind of modifiers probably
 
 ---
 
