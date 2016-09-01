@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="ja">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>PEGに関する最近の研究</title>
+
+		<meta name="description" content="PEGに関する最近の研究">
+		<meta name="author" content="Kota Mizushima">
+
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/black.css" id="theme">
+<style type="text/css">
+  .reveal h1,
+  .reveal h2,
+  .reveal h3,
+  .reveal h4,
+  .reveal h5,
+  .reveal h6 {
+    text-transform: none;
+  }
+</style>
+
+
+		<!-- Code syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+				<section data-markdown data-separator="^\n---$"><script type="text/template">
+          ## PEGに関する最近の研究
+          ## 水島 宏太（株式会社ドワンゴ）
+
+---
+
+## PEG
+## （Parsing Expression Grammar）
+
+* Bryan Fordによって2004年に提案された形式文法
+* Yet another formal language by Bryan Ford(2004)
+* 源流はBirmanのTDPL（1970s）
+
+---
+
+# PEGについておさらい
+
+---
+
+## PEGの特徴
+
+* 分析的形式文法
+  * ←→ 生成文法
+* Packrat Parsingで線形時間で解析可能
+* 任意の決定的文脈自由言語を解析可能
+* 一部の文脈依存言語を解析可能
+  * a^n b^n c^n（n≧1）
+* PEL ⊃CFL かどうかはOpen Problem
+  * PEL: Parsing Expression Language
+  * CFL: Context Free Language
+
+---
+
+## PEGの基本（１）
+
+* 空文字列: ε or ""
+* 文字列リテラル: " "
+* 文字クラス: [ ]
+* 非終端記号: N
+
+---
+
+## PEGの基本（２）
+
+* 連接: e1 e2
+* 優先度付き選択: e1 / e2
+* 0回以上の繰り返し: e*
+* 1回以上の繰り返し: e+
+* 0回または1回の出現: e?
+* And-predicate: &e
+* Not-predicate: !e
+
+---
+
+## PEGの基本（３） - 構文糖衣の除去
+
+* 1回以上の繰り返し: `e+ ==> e e*`
+
+* 0回または1回の出現: `e? ==> e / ""`
+
+* and-predicateの除去: `&e ==> !!e`
+
+* 0回以上の繰り返しの除去: 
+  * `e* ==> N' where N' <- e N' / ""`
+
+* 文字クラスの除去: `[abc] ==> "a" / "b" / "c"`
+
+---
+
+## PEGとパーザコンビネータ（１）
+
+```scala
+/* Scala code */
+object PEG {
+  type Parser = String => Option[String]
+  implicit class Extension(a: => Parser) {
+    def ~(b: => Parser): Parser = in => a(in).flatMap(b) // e1 e2
+    def /(b: => Parser): Parser = in => a(in).orElse(b(in)) // e1 / e2
+    def unary_! : Parser = in => a(in) match { // !e
+      case Some(_) => None
+      case None => Some(in)
+    }
+    def s(literal: String): Parser = in => // " "
+      if(in.startsWith(literal)) Some(in.substring(literal.length))
+      else None
+  }
+}
+```
+
+---
+
+## PEGとパーザコンビネータ（2）
+* PEGとパーザコンビネータ（の単純な実装）が対応
+
+```scala
+/* Scala code */
+import PEG._
+val S: Parser = (s("Hello, ") / s("Good Morning, ")) ~ s("Taro")
+```
+
+---
+
+## PEGによる四則演算言語の表現
+
+```
+S <- (" " / "\t" / "\r\n" "\r" / "\n)*
+E <- A ("+" S A / "-" S A)*
+A <- P ("*" S P / "/" S P)*
+P <- "(" S E ")" S / N
+N <- [1-9]+
+```
+
+---
+
+## PEGによる文脈依存言語
+### (a^n b^n c^n)の表現
+* CFGでは表現不可
+  * ¬(CFL ⊃PEL)
+
+```
+S ← &(A !"b") "a"+ B !.
+A ← "a" A? "b"
+B ← "b" B? "c"
+```
+
+---
+
+## PEGの問題点 - 文法の再利用性
+
+* Spacingがあちこちに出てくる
+
+```
+Spacing <- " " / "\t" / "\r" / "\n"
+Expression <- Primary (
+"+" Spacing Primary
+"-" Spacing Primary
+)*
+Primary <- "(" Spacing Expression ")" Spacing /
+NumberLiteral Spacing /
+StringLiteral Spacing
+NumberLiteral <- "0" | [1-9][0-9]*
+StringLiteral <- "\""
+  ("#{" Expression "}" / !"\"" .)*
+"\""
+```
+
+---
+
+## PEGで表現困難な文法(1) - 回文
+
+* 直観的な定義ではうまく表現できない
+
+```
+S <- "a" S "a" / "b" S "b" / ""
+```
+* 実際に表現不可能かは不明
+
+---
+
+## PEGで表現困難な文法(2) - 順列言語
+
+* 全パターンを書き下せば表現可能だが
+  あまり現実的でない
+
+```
+public static final //OK
+public final static // OK
+static final public // OK
+public public final // NG
+```
+
+---
+
+## PEGの関連研究（１）
+
+* Matsumura, T. and Kuramitsu, K.(2016): 
+* PEGに対して実用的なプログラミング言語を扱うための拡張を提案
+  * 変数宣言依存
+  * インデント依存文法
+  * 文脈依存キーワード
+  * 本発表にこの研究の拡張を適用することも可能
+
+---
+
+## PEGの関連研究（２）
+* Warth, A., Douglass, J. R. and Millstein, T(2008):
+* PEGに対する左再帰拡張を提案
+  * Packrat Parsingのアルゴリズムを利用
+  * 不具合が発見済み
+    * 白田，木山，芦原(2011)
+* 左再帰をどこまで扱えるか不明
+  * そもそも左再帰PEGのセマンティクスが定義されていない…
+
+			  </script></section>
+      </div>
+		</div>
+    
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+
+		<script>
+
+			// Full list of configuration options available at:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				transition: 'slide', // none/fade/slide/convex/concave/zoom
+
+				// Optional reveal.js plugins
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true },
+					{ src: 'plugin/notes/notes.js', async: true }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>
