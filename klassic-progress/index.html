@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="ja">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>プログラミング言語Klassicとその実装</title>
+
+		<meta name="description" content="プログラミング言語Klassicとその実装">
+		<meta name="author" content="Kota Mizushima">
+
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/black.css" id="theme">
+<style type="text/css">
+  .reveal h1,
+  .reveal h2,
+  .reveal h3,
+  .reveal h4,
+  .reveal h5,
+  .reveal h6 {
+    text-transform: none;
+  }
+</style>
+
+
+		<!-- Code syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+				<section data-markdown data-separator="^\n---$"><script type="text/template">
+
+## プログラミング言語Klassicとその実装
+### 技術コミュニケーション室
+### 水島 宏太
+
+---
+
+### Who am I?
+* Twitter ID: [@kmizu](https://twitter.com/kmizu)
+* GitHub: [kmizu](https://github.com/kmizu)
+* 構文解析マニア
+* プログラミング言語（作成）オタク 
+
+---
+
+## Klassicについて
+* 2016/07にエンジニアLTで簡単に紹介
+* 今回はそこから進んだ部分も紹介
+
+---
+
+## Klassic
+* [https://github.com/klassic/klassic](https://github.com/klassic/klassic)
+  * わざわざプログラミング言語名のorganizationを取得！
+* 実用的に使えるプログラミング言語を目指して、開発中
+* Matzさんが卒論で作った言語と同じ発音らしい
+  * MatzさんのはClassic
+  * かぶったのはただの偶然
+
+---
+
+## Klassicの特徴
+* 静的型システム
+* 式ベースの言語
+* 第一級関数
+* 型推論
+  * Hindley-Milner型推論
+* ヒアドキュメント
+* Listリテラル
+* Mapリテラル
+* Java FFI（リフレクション経由）
+* その他謎文法
+
+---
+
+## 式ベース
+* 最近の多くのプログラミング言語はだいたいこれ
+* ほとんどの要素が評価した結果として値を返す
+  * if式
+  * while式
+  * 関数呼び出し
+  * メソッド呼び出し
+  * , etc.
+
+```scala
+val lt(x, t, e) = if(x) t() else e()
+// lt: (Boolean, 'a, 'a)
+```
+
+---
+
+## 第一級関数
+
+* 関数を
+  * 引数として渡したり
+  * 返り値として返したり
+* stopwatch: (() => Unit) => Int
+  * 引数として渡された0引数の評価にかかった時間を返す
+
+```scala
+val time = stopwatch( => {
+  sleep(1000)
+}
+println(time)
+```
+
+---
+
+## 型推論(1) - よくある誤解
+
+* 単に
+
+```scala
+val f = 1 + 1 // f: Int
+```
+
+となる機能(式の型を変数に付与する）ではありません
+
+* このような推論はlocal type inferenceなどと呼ばれます
+* 「いわゆる」型推論とはlocal type inferenceのことが多い
+
+---
+
+## 型推論(2) - 真実
+
+* 双方向の推論
+
+* たとえば、
+
+```scala
+def fact(n) = {
+  if(n < 2) 1 else n * fact(n - 1)
+}
+//fact: Int => Int
+```
+
+の型が本体での使われ方「だけ」から推論
+
+* Klassicの型推論はHindley-Milner型推論がベース
+  * OCaml, Haskellなどが採用している型推論方式
+
+---
+
+## Java FFI
+
+```scala
+val list = new java.util.ArrayList
+list.add(1)
+list.add(2)
+println(list)
+val buffer = new java.lang.StringBuffer
+buffer.append("A").append("B").append("C")
+println(buffer)
+```
+
+* Javaのオブジェクトの型のための適切な型がない
+  * もちろん、将来的にはちゃんと扱いたいが…
+* 現段階では、特殊型Dynamicとして扱っている
+
+---
+
+## ヒアドキュメント
+
+```scala
+println("#{<<TAG1 + 1} #{<<TAG2 + 2} #{<<TAG3 + 3}")
+tag1
+TAG1
+tag2
+TAG2
+tag3
+TAG3
+```
+
+---
+
+## Listリテラル
+
+* PEGを駆使した謎文法
+
+```scala
+println([1, 2, 3]) → 普通
+println([
+  1
+  2
+  3
+]) → 改行もセパレータに
+println([
+  [1 2 3]
+  [4 5 6]
+  [7 8 9]
+]) → スペースもセパレータに！
+```
+
+---
+
+## Mapリテラル
+* 同じくPEGを駆使した謎文法
+
+```scala
+%[x: 1, y: 1] //普通
+%[x: 1 y: 2] // スペースもセパレータに
+%[x: 1
+  y: 2] // 改行でもOK
+```
+
+---
+
+## その他謎文法
+
+```scala
+/* パイプライン演算子と似ているが引数の適用の仕方が違う */
+[1 2 3]->map((x) => x + 1) // map([1 2 3])((x) => x + 1)
+/* 通常の関数の前に#をつけると中置記法で書けるように 
+ * Haskellからの影響
+ */
+1 #cons [] // <=> cons(1, [])
+```
+
+---
+
+## 今後の予定
+* 代数的データ型のための言語機能
+* オブジェクトシステム
+* 組み込み関数の充実
+* コンパイル時エラーチェックを親切に
+* 0.1リリース
+  * 2016年度中がひとつの目標
+
+---
+
+## 気になった方へ
+
+* https://github.com/klassic/klassic
+
+にスターをお願いします
+
+* 励みになります
+
+			  </script></section>
+      </div>
+		</div>
+    
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+
+		<script>
+
+			// Full list of configuration options available at:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				transition: 'slide', // none/fade/slide/convex/concave/zoom
+
+				// Optional reveal.js plugins
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true },
+					{ src: 'plugin/notes/notes.js', async: true }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>
