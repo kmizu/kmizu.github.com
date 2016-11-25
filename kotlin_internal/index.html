@@ -49,44 +49,45 @@
 		<div class="reveal">
 
 			<!-- Any section element inside of this container is displayed as a slide -->
-			<div class="slides">
-				<section data-markdown><script type="text/template">
-          ## KotlinのSmart Castを探る
-          ## Kotlin Internal 勉強会
-          ## 構文解析友の会（水島 宏太）
-          ---
-				</script></section>
+<div class='slides'>
+<section data-markdown data-separator='^\n---$'><script type='text/template'>
 
-				<section data-markdown><script type="text/template">
-          ### 誰？
-          * Twitter ID: [@kmizu](https://twitter.com/kmizu)
-          * GitHub: [kmizu](https://github.com/kmizu)
-          * 構文解析を愛するもの
-          * Kotlin初心者 
-          ---
-					</script></section>
+## KotlinのSmart Castを探る
+## Kotlin Internal 勉強会
+## 構文解析友の会（水島 宏太）
 
-				<section data-markdown><script type="text/template">
-          ## 今日のお話
-          * KotlinのSmart Castの仕組みと限界を探ってみた
-				</script></section>
+---
 
-				<section data-markdown><script type="text/template">
-          ## Kotlin
-          * 皆大好きIntelliJ IDEAのJetBrains社が開発
-          * ScalaやGroovyなどにインスパイアされた
-　　　　　* Scalaがわかっていればだいたいわかる
-            * data class：case class
-            * val/var：そのまま
-            * primary constructor：そのまま
-            * object/classの区別：だいたい同じ
-            * メソッドの定義：funで始まるかdefで始まるか
-            * etc.
-            * Smart Cast：Scalaにはない
-				</script></section>
+### 誰？
+* Twitter ID: [@kmizu](https://twitter.com/kmizu)
+* GitHub: [kmizu](https://github.com/kmizu)
+* 構文解析を愛するもの
+* Kotlin初心者 
 
-				<section data-markdown> <script type="text/template">
-          ## Smart Cast
+---
+
+## 今日のお話
+* KotlinのSmart Castの仕組みと限界を探ってみた
+* Kotlinのソースを読んでみたがよくわからなかった…
+
+---
+
+## Kotlin
+* 皆大好きIntelliJ IDEAのJetBrains社が開発
+* ScalaやGroovyなどにインスパイアされた
+* Scalaがわかっていればだいたいわかる
+  * data class：case class
+  * val/var：そのまま
+  * primary constructor：そのまま
+  * object/classの区別：だいたい同じ
+  * メソッドの定義：funで始まるかdefで始まるか
+  * Function22制限：そのまま
+  * , etc.
+  * Smart Cast：Scalaにはない
+
+---
+
+## Smart Cast
 
 ```
 val x: String? = "FOO"
@@ -101,18 +102,18 @@ if(y is String) {
 }
 ```
 
-        </script></section>
+---
 
-				<section data-markdown><script type="text/template">
-          ## どうなってるの？
-          * Flow-Sensitive Type
-            * 文脈に応じて型が変化するシステムの総称
-          * 完全な追跡はおそらく無理
-            * 一般的にはより保守的なアプローチを採用する
-			  </script></section>
+## どうなってるの？
+* Flow-Sensitive Type
+* 文脈に応じて型が変化するシステムの総称
+* 完全な追跡はおそらく無理
+* 一般的にはより保守的なアプローチを採用する
 
-				<section data-markdown><script type="text/template">
-          ## 準備
+---
+
+## 準備
+
 ```
 interface D { fun d(): Unit }
 interface A : D { fun a(): Unit }
@@ -126,9 +127,11 @@ class C : A, B {
         println("C") }
 }
 ```
-        </script></section>
-        <section data-markdown><script type="text/template">
-          # 実験1
+
+---
+
+# 実験1
+
 ```
 fun demo1() {
     val x: Any = "FOO"
@@ -138,9 +141,10 @@ fun demo1() {
 }
 ```
 
-        </script></section>
-        <section data-markdown><script type="text/template">
-          # 実験2
+---
+
+# 実験2
+
 ```
 fun demo2() {
     val x: Any = "FOO"
@@ -149,9 +153,11 @@ fun demo2() {
     }
 }
 ```
-        </script></section>
-        <section data-markdown><script type="text/template">
-          # 実験3
+
+---
+
+# 実験3
+
 ```
 fun demo3() {
     val x: Any = "FOO"
@@ -160,9 +166,12 @@ fun demo3() {
     }
 }
 ```
-        </script></section>
-        <section data-markdown><script type="text/template">
-          # 実験4
+
+---
+
+# 実験4
+
+
 ```
 fun demo4() {
     val x: Any = "FOO"
@@ -171,9 +180,11 @@ fun demo4() {
     }
 }
 ```
-        </script></section>
-        <section data-markdown><script type="text/template">
-          # 実験5
+
+---
+
+# 実験5
+
 ```
 fun demo5() {
     val x: Any = "FOO"
@@ -182,9 +193,11 @@ fun demo5() {
     }
 }
 ```
-        </script></section>
-        <section data-markdown><script type="text/template">
-          # 実験6
+
+---
+
+# 実験6
+
 ```
 fun demo6() {
     val x: Any = "FOO"
@@ -196,9 +209,11 @@ fun demo6() {
     }
 }
 ```
-        </script></section>
-        <section data-markdown><script type="text/template">
-          # 実験7
+
+---
+
+# 実験7
+
 ```
 fun demo7() {
     val x: Any = "FOO"
@@ -207,9 +222,11 @@ fun demo7() {
     }
 }
 ```
-        </script></section>
-        <section data-markdown><script type="text/template">
-          # 実験8
+
+---
+
+# 実験8
+
 ```
 fun demo8() {
     val x: Any = "FOO"
@@ -220,9 +237,11 @@ fun demo8() {
     }
 }
 ```
-        </script></section>
-        <section data-markdown><script type="text/template">
-          # 実験9
+
+---
+
+# 実験9
+
 ```
 fun demo9() {
     val x: Any? = null
@@ -233,9 +252,11 @@ fun demo9() {
     }
 }
 ```
-        </script></section>
-        <section data-markdown><script type="text/template">
-          # 実験10
+
+---
+
+# 実験10
+
 ```
 fun demo10() {
     val x: Any? = null
@@ -248,11 +269,12 @@ fun demo10() {
     }
 }
 ```
-        </script></section>
 
-        <section data-markdown><script type="text/template">
-          ## Smart Castの限界
-          * メソッドを飛び越えた解析はできない
+---
+
+## Smart Castの限界
+
+* メソッドを飛び越えた解析はできない
 
 ```
 fun String?.notNullAndNotEmpty(): Boolean {
@@ -269,14 +291,22 @@ fun example() {
     }
 }
 ```
-        </script></section>
-        <section data-markdown><script type="text/template">
-        ## まとめ
-        * `is`や`&&`、`||`、`!`を特別扱いしてSmart Castを行っている
-        * 複雑な論理式もちゃんと扱える
-        * たぶん、内部的には型の積や和を持っている
-        * メソッドを飛び越えた解析はできない
-        </script></section>
+
+---
+
+## ソースコードを読んでみた
+* `compiler/frontend/src/org/jetbrains/kotlin/resolve/calls/smartcast`
+* わからない…力不足
+
+---
+
+## まとめ
+* `is`や`&&`、`||`、`!`を特別扱いしてSmart Castを行っている
+* 複雑な論理式もちゃんと扱える
+* たぶん、内部的には型の積や和を持っている
+* メソッドを飛び越えた解析はできない
+* ソースコードを読んでみたがよくわからなかった…
+</script></section>
 
       </div>
 		</div>
