@@ -272,6 +272,20 @@ fun demo10() {
 
 ---
 
+# 実験11
+
+```
+fun demo10() {                                   
+  fun bar(x: Any) {}                             
+  fun <T : Any?> foo(x: T) {                     
+    if (x != null) {                             
+      bar(x) // Should be allowed with smart cast
+  }                                              
+}                                                
+```
+
+---
+
 ## Smart Castの限界
 
 * メソッドを飛び越えた解析はできない
