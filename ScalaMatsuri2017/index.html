@@ -4,9 +4,9 @@
 	<head>
 		<meta charset="utf-8">
 
-    <title>ScalaプログラマのためのKotlin</title>
+    <title>Kotlin for Scala Programmers</title>
 
-		<meta name="description" content="ScalaプログラマのためのKotlin">
+		<meta name="description" content="Kotlin for Scala Programmers">
 		<meta name="author" content="Kota Mizushima">
 
 		<meta name="apple-mobile-web-app-capable" content="yes">
@@ -52,43 +52,56 @@
 <div class='slides'>
 <section data-markdown data-separator='^\n---$'><script type='text/template'>
 
-## ScalaプログラマのためのKotlin
+## Kotlin for Scala Programmers
 ## ScalaMatsuri 2017
-## 水島 宏太（株式会社ドワンゴ）
+## Kota Mizushima (DWANGO Co.,Ltd.)
 
 ---
 
-### 誰？
+### Who am I?
 * Twitter ID: [@kmizu](https://twitter.com/kmizu)
 * GitHub: [kmizu](https://github.com/kmizu)
 * Love: Scala/Rust/Nemerle/...
-* 構文解析を愛するもの
-* Kotlinの追っかけ？
+* Parsing algorithm enthuasiast
+
+***
+
+Scalaと構文解析アルゴリズムが大好きなプログラマです
 
 ---
 
 ## Kotlin (1)
 
-* JetBrains社製のJVM用プログラミング言語
+* A JVM programming language by JetBrains
+  * JetBrains is famous for IntelliJ IDEA
 * 100 % interoperable with Java
-  * らしい（ホントか？）
-* Androidアプリ作成用言語として急激に成長している
-  * らしい
+  * is it true?
+* Good IDE support
+* A programming langauge for Android 
+
+***
+
+* IntelliJ IDEAで有名なJetBrainsによって開発されました
+* Android用のプログラム言語として知られています
 
 ---
 
 ## Kotlin (2)
-* Scalaに**非常に**似ています
-  * というより、Kotlinに凄い影響を受けています
-* こんなものまで受け継がなくても…
-  * scalac.bat -> kotlinc.bat
-  * Function22制限
-* Scalaがわかっていればほとんどの人はすぐわかる
-* KotlinがScalaにどれくらい**似ているか**説明したい
+
+* Kotlin is very similar with Scala
+  * Accurately, Kotlin inherits many Scala features
+  * kotlinc.bat inherits from scalac.bat
+  * Function22 limitation also inherits from Scala
+* If you are a Scala user, you can easily understand Kotlin
+
+***
+
+KotlinはScalaに非常によく似た、
+より正確にはScalaから多くを受け継いだ言語です
 
 ---
 
-## variable
+## Variables
 
 * Kotlin
 
@@ -106,52 +119,324 @@ var y: Int = 2
 y = 3
 ```
 
+***
+
+両方のコードは**全く**同じです
+
 ---
 
-## data class
+## Primary constructors
 
-### data class = case class - pattern matching
+* Both language have almost same constructor mechanism
+  * So-called primary constructor
 
-* Kotlin
+```kotlin
+class Point(val x: Int, val y: Int) {
+  override fun toString() = "(${x}, ${y})"
+}
+```
+
+```scala
+class Point(val x: Int, val y: Int) {
+  override def toString = s"(${x}, ${y})"
+}
+```
+
+***
+
+* プライマリコンストラクタと呼ばれる仕組みを持っています
+
+---
+
+## Value objects
+
+* data class = (case class - pattern matching)
 
 ```kotlin
 data class Person(val name: String, age: Int)
 ```
 
-* Scala
-
 ```scala
 case class Person(name: String, age: Int)
 ```
 
-キーワードが違うだけ（val必須な点も違う）
+***
+
+ほぼ、キーワードが違うだけです
+
+* Kolinはdataを
+* Scalaはcaseを
 
 ---
 
-## まとめ (1) - 類似点
+## No Statics
 
-* val/var <=> val/var
-* case class <=> data class
+* Kotlin and Scala both don't have static members
+* Use `object` instead.
+
+```kotlin
+object Utility {
+  fun hello(): String = "Hello"
+}
+```
+
+```scala
+object Utility {
+  def hello: String = "Hello"
+}
+```
+
+***
+
+* キーワードは違います
+* 構文はほとんど同じです
+
+---
+
+## Function Type
+
+* arity is limited to 22
+  * its limitation inherits from Scala
+* In Kotlin, use `->` instead of `=>` in Scala
+
+```kotlin
+val inc: (Int) -> Int = {x-> x + 1}
+in(1) // 2
+```
+
+```scala
+val inc: Int => Int = {x => x + 1}
+inc(1) // 2
+```
+
+*** 
+
+* `->`と`=>`の違いに注意しましょう
+* Kotlinでは1引数の関数型でも`()`が省略できません 
+
+---
+
+## Nullable type
+
+* Kotlin has nullable type
+* Scala has Option type
+
+```kotlin
+val x: String? = ToDo()
+if(x != null) {
+  ToDo() // x is treated as String in this block
+} else {
+  ToDo()
+}
+```
+
+```scala
+val x: Option[String] = ???
+x match {
+ case Some(v) => ???
+ case None => ???
+}
+```
+
+***
+
+* Kotlinではnullを型システム上特別扱いします
+* Scalaは通常のデータ型であるOptionを使います
+
+---
+
+## Properties
+
+* A property in Kotlin is just a special method
+
+```kotlin
+class Point(...) {
+  val x: Int
+    get() = ToDo()
+  val y: Int
+    get() = ToDo()
+}
+```
+
+```scala
+class Point(...) {
+  def x: Int = ToDo()
+  def y: Int = ToDo()
+}
+```
+
+*** 
+
+* Kotlinのプロパティは単に呼び出し形式が特殊なメソッドです
+* Scalaでは引数の括弧が省略可能なので特に必要ありません
+
+---
+
+## Collections (1)
+
+* Scala has its own collection libraries
+  * mutable and immutable
+* Kotlin reuse JCF
+  * runtime size is smaller than Scala
+    * it is important in Android
+  * JCF(Java Collection Framework) type is specially processed
+  * no immutable collection type
+
+***
+
+* Scalaは独自のコレクションライブラリを持っています
+* KotlinはJCFを再利用しています
+
+---
+
+## Collections (2)
+
+```kotlin
+>>> val arrList = arrayListOf(1, 2, 3, 4, 5)
+>>> val filtered = arrList.filter{it % 2 == 1}
+>>> filtered
+[1, 3, 5]
+>>> arrList
+[1, 2, 3, 4, 5]
+>>> arrList.fold(0){x, y -> x + y}
+15
+```
+
+* Syntax of anonymous function: `{x1, .., xn -> exprs}`
+* Note that `->` is right in Kotlin (not `=>`)
+
+***
+
+* filter, foldといった高階関数が揃っています
+* `->`を`=>`と書き間違えないように注意しましょう
+
+---
+
+## Extension Functions
+
+```kotlin
+fun String.withExtension(ext: String): String = "${this}.${ext}"
+"Hello".withExtension("kt") // "Hello.kt"
+```
+
+```scala
+implicit class RichString(self: String) {
+  def withExtension(ext: String): String = s"${self}.${ext}"
+}
+"Hello".withExtension("scala") // "Hello.scala"
+```
+
+* In Kotlin, extension functions can be directly without extra names
+* Both provide the same features
+
+***
+
+* Kotlinの方がより直接的に拡張関数を定義できます
+* ですが基本的には同じようなものです
+
+---
+
+## Declaration-site Variance
+
+* Kotlin and Scala both have declaration-site variance
+  * Most pragmatic programming languages don't have it
+
+```kotlin
+val x: MutableList<Int> = mutableListOf(1, 2, 3)
+val y: List<Any> = x // List<T> is covariant
+```
+
+```scala
+scala> import scala.collection.Seq
+scala> import scala.collection.mutable.{Seq => MutableSeq}
+scala> val x: MutableSeq[Int] = MutableSeq(1, 2, 3)
+x: scala.collection.mutable.Seq[Int] = ArrayBuffer(1, 2, 3)
+
+scala> val y: Seq[Int] = x // scala.collection.Seq<T> is covariant
+y: Seq[Int] = ArrayBuffer(1, 2, 3)
+```
+
+***
+
+* KotlinとScalaは宣言側の変性を持つ数少ない言語です
+
+---
+
+## Similarities
+
+* val/var
+* Primary constructor
+* `case class` and `data class`
+* No statics
 * function type
-* Function22制限
-* no static
-* object
-* companion object
-* @tailrec <=> tailrec
-* declarationuse-site variance
-  * 実用言語ではScalaとKotlinくらい
+* Function22 limitation
+* Extension functions
+* `object`
+* `@tailrec` and `tailrec`
+* Declarationuse-site variance
+
+***
+
+色々なものがそっくりです
 
 ---
 
-## まとめ (2) - 相違点
+## Differences
 
-* smart cast
-* nullの扱い
-* def <=> fun
-* 関数宣言でのreturn必須
-* inlineの扱い
-  * Scalaではヒント
-  * Kotlinではインライン化必須
+* Implicit (Scala)
+* Pattern match (Scala)
+* Smart cast (Kotlin)
+* JCF VS. its own collection libraries
+* Option VS. nullable
+* Function type with receivers (Kotlin)
+
+***
+
+* 似ているけど違うものももちろんあります
+* Implicitを使ったパターンが使えないことを除けばKotlinに慣れるのは簡単でしょう
+
+---
+
+## Getting Started
+
+* Read official documentation
+  * https://kotlinlang.org/
+* No book is reqruied if you are a Scala programmer
+
+***
+
+* 公式ドキュメントを読みましょう
+* Scalaプログラマなら特に本は必要ないでしょう
+
+---
+
+## IDE & Build Tool
+
+* It's recommended to use IntelliJ IDEA
+  * IntelliJ IDEA itself includes Kotlin Plugin
+* Use Gradle
+
+***
+
+* IntelliJ IDEAが推奨です（最初からKotlinが使えます）
+* ビルドツールはGradleを使うべきでしょう
+
+---
+
+## Conclusion
+
+* Kotlin is easy to understand for Scala programmers since:
+  * it provides many similar features
+  * it provide similar syntax
+  * both languages run on JVM
+* Probably, Scala is also easy to understand for Kotlin programmers
+* Let's try Kotlin!
+
+***
+
+* KotlinとScalaは非常によく似た言語です
+  * ScalaプログラマがKotlinを学習するのは非常に容易です
+* Kotlinを試してみましょう！
 
 </script></section>
 
