@@ -424,6 +424,25 @@ printRange(1, 10); // from 1 to 10 are printed
 
 ---
 
+## ANTLR V4の基本文法
+
+```
+grammar MyLang;
+myRule returns [ReturnType e]
+   : ...
+   ;
+...
+MY_TOKEN
+   : 'mytoken'
+   ;
+```
+
+***
+
+* 大文字から始まるものがトークン定義になる
+
+---
+
 ## nubの四則演算式の定義
 
 ```
