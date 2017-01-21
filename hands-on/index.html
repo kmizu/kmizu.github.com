@@ -404,6 +404,38 @@ printRange(1, 10); // from 1 to 10 are printed
 * これを省略可能にするのはやや難易度が高いです
 * がチャレンジするのも一興
 
+---
+
+## ANTLR V4
+
+* http://www.antlr.org/
+* nubの構文解析器のために使ったツール
+* yaccやJavaCCよりずっと強力
+* 文法のconflict等に悩まされることはまずない
+* 充実したIDEサポート
+
+---
+
+## nubの四則演算式の定義
+
+```
+additive returns [AstNode.Expression e]
+    : l=additive op='+' r=multitive {$e = new AstNode.BinaryOperation($op.getText(), $l.e, $r.e);}
+    | l=additive op='-' r=multitive {$e = new AstNode.BinaryOperation($op.getText(), $l.e, $r.e);}
+    | v=multitive {$e = $v.e;}
+    ;
+
+multitive returns [AstNode.Expression e]
+    : l=multitive op='*' r=primary {$e = new AstNode.BinaryOperation($op.getText(), $l.e, $r.e);}
+    | l=multitive op='/' r=primary {$e = new AstNode.BinaryOperation($op.getText(), $l.e, $r.e);}
+    | v=primary {$e = $v.e;}
+    ;
+```
+
+---
+
+以降、実演
+
 </script></section>
 
       </div>
