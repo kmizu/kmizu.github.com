@@ -446,16 +446,16 @@ MY_TOKEN
 ## nubの四則演算式の定義
 
 ```
-additive returns [AstNode.Expression e]
-    : l=additive op='+' r=multitive {$e = new AstNode.BinaryOperation($op.getText(), $l.e, $r.e);}
-    | l=additive op='-' r=multitive {$e = new AstNode.BinaryOperation($op.getText(), $l.e, $r.e);}
-    | v=multitive {$e = $v.e;}
+additive
+    : additive '+' multitive
+    | additive '-' multitive
+    | multitive
     ;
 
-multitive returns [AstNode.Expression e]
-    : l=multitive op='*' r=primary {$e = new AstNode.BinaryOperation($op.getText(), $l.e, $r.e);}
-    | l=multitive op='/' r=primary {$e = new AstNode.BinaryOperation($op.getText(), $l.e, $r.e);}
-    | v=primary {$e = $v.e;}
+multitive
+    : multitive '*' primary
+    | multitive '/' primary
+    | primary
     ;
 ```
 
