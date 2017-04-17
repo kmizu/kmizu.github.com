@@ -162,7 +162,7 @@ println(s"${space} bytes are used")
 
 ```scala
 import com.github.scaruby._
-SFile.openReader("input.txt){reader =>
+SFile.openReader("input.txt"){reader =>
   SFile.openWriter("output.txt"){writer =>
     writer.print(reader.readAll())
   }
@@ -175,7 +175,7 @@ SFile.openReader("input.txt){reader =>
 
 ```scala
 import com.github.scaruby._
-val source = 'Hello, World'
+val source = "Hello, World"
 val encoded = SBase64.encode64(source.getBytes('UTF-8'))
 val decoded = new String(SBase64.decode64(encoded), 'UTF-8')
 assert(source === decoded)
@@ -200,11 +200,11 @@ println(cat)
 ## 今後の予定
 
 * `Dir.glob`相当の実装
+* open可能なりソースを統一的に扱う
 * 正規表現を使った検索のサポート
 * URLを入力ソースとして取り扱えるように拡張
   * `java.net.URL`を隠蔽したものになる予定
 * JSON シリアライザ/デシリアライズ
-* Base64 エンコーダ/デコーダ
 * その他、日常の用途であったら便利なものを随時追加
 
         </script></section>
