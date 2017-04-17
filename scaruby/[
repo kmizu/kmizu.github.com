@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="ja">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>Introduction to Scaruby</title>
+
+		<meta name="description" content="Introduction to Scaruby">
+		<meta name="author" content="Kota Mizushima">
+
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/black.css" id="theme">
+<style type="text/css">
+  .reveal h1,
+  .reveal h2,
+  .reveal h3,
+  .reveal h4,
+  .reveal h5,
+  .reveal h6 {
+    text-transform: none;
+  }
+</style>
+
+		<!-- Code syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+				<section data-markdown data-separator="^\n---$"><script type="text/template">
+
+## Introduction to Scaruby
+### 技術コミュニケーション室
+### プログラミング言語友の会
+### 水島宏太
+
+---
+
+## 自己紹介
+* Twitter: [@kmizu](https://twitter.com/kmizu)
+* GitHub: [kmizu](https://github.com/kmizu)
+* 構文解析おじさん & プログラミング言語オタク 
+* Scalaエヴァンジェリスト
+* 趣味：プログラミング言語|形式言語の自作
+  * [Onion](https://github.com/onionlang/onion)
+  * [Klassic](https://github.com/klassic/klassic)
+  * [Macro PEG](https://github.com/kmizu/macro_peg)
+  * , etc.
+
+---
+
+## Scarubyとは
+
+---
+
+## 既存のScalaライブラリへの不満
+
+* Scalaの標準IOライブラリが貧弱
+  * scala.ioとか早く消滅して欲しい気分
+* 他のライブラリ
+  * better-files
+    * https://github.com/pathikrit/better-files
+    悪くないが、java.ioを知っている必要がある
+  * sbt IO
+    * 同上
+* 簡単なスクリプトをScalaで書きたい
+
+---
+
+## Scarubyとは
+
+* Rubyに影響を受けた軽量スクリプティングライブラリ
+* 使うのが簡単
+* （Scala標準ライブラリとJDK以外への）依存ゼロ
+* 「厚い」ラッパー
+  * java.ioを意識しないで済むように
+* URL: https://github.com/scaruby/scaruby
+* 開発を初めたばかり
+
+---
+
+## Scarubyの設計方針
+
+* 手軽に使える
+* 自動リソース管理
+* オーバーロード（ほとんど）なし
+  * オーバーロードはAPIをわかりにくくする
+
+---
+
+## Scarubyの利用
+
+* build.sbtに以下を追加する
+
+```scala
+resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
+
+libraryDependency += "com.github.scaruby" %% "scaruby" % "0.1-SNAPSHOT"
+```
+
+---
+
+## ファイルからの読み込み
+
+```scala
+import com.github.scaruby._
+val txt = SFile.read("input.txt")
+println(txt)
+```
+
+---
+
+## ファイルへの書き込み
+
+```scala
+import com.github.scaruby._
+SFile.write("outout.txt", SFile.read("input.txt"))
+```
+
+---
+
+## ファイルの属性取得
+
+```scala
+import com.github.scaruby._
+val example = SFile("example.txt")
+if(example.executable) {
+  println("example.txt is executable")
+}
+val space = example.totalSpace
+println(s"${space} bytes are used")
+```
+
+---
+
+## ローンパターン
+
+```scala
+import com.github.scaruby._
+SFile.openReader("input.txt){reader =>
+  SFile.openWriter("output.txt"){writer =>
+    writer.print(reader.readAll())
+  }
+}
+```
+
+---
+
+## for式によるローンパターン
+
+```scala
+import com.github.scaruby._
+
+val cat = (for {
+  r1 <- new SFileReader("input1.txt")
+  r2 <- new SFileReader("input2.txt")
+} (r1 + r2))
+println(cat)
+```
+
+---
+
+## 今後の予定
+
+* `Dir.glob`相当の実装
+* 正規表現を使った検索のサポート
+* URLを入力ソースとして取り扱えるように拡張
+  * `java.net.URL`を隠蔽したものになる予定
+* JSON シリアライザ/デシリアライズ
+* Base64 エンコーダ/デコーダ
+* その他、日常の用途であったら便利なものを随時追加
+
+        </script></section>
+
+      </div>
+    </div>
+
+
+    <script src="lib/js/head.min.js"></script>
+    <script src="js/reveal.js"></script>
+
+    <script>
+
+// Full list of configuration options available at:
+// https://github.com/hakimel/reveal.js#configuration
+Reveal.initialize({
+  controls: true,
+  progress: true,
+  history: true,
+  center: true,
+
+  transition: 'slide', // none/fade/slide/convex/concave/zoom
+
+    // Optional reveal.js plugins
+  dependencies: [
+  { src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+  { src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+  { src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+    { src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+    { src: 'plugin/zoom-js/zoom.js', async: true },
+      { src: 'plugin/notes/notes.js', async: true }
+  ]
+});
+
+    </script>
+
+  </body>
+</html>
