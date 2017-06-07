@@ -67,7 +67,7 @@
 
 ---
 
-### Scalaの落とし穴
+## Scalaの落とし穴
 
 - 色々ある
 - 多くはコンパイル時にエラーになるので神経質になる必要はない
@@ -75,6 +75,66 @@
   - 気をつけよう
 
 ---
+
+## Unitを返す関数を意図せず書いてしまう
+
+```scala
+def double(x: Int) {
+  x * 2
+}
+double(2) # => ()
+```
+
+解決策：明示的に型を書く
+
+```scala
+def double(x: Int): Int = {
+  x * 2
+}
+double(2) # => 4
+```
+
+---
+
+## 変更可能コレクションの変更しない操作を呼び出してしまう
+
+```scala
+scala> val buffer = scala.collection.mutable.Buffer(1, 2, 3)
+buffer: scala.collection.mutable.Buffer[Int] = ArrayBuffer(1, 2, 3)
+
+scala> buffer.drop(1)
+res0: scala.collection.mutable.Buffer[Int] = ArrayBuffer(2, 3)
+
+scala> buffer
+res1: scala.collection.mutable.Buffer[Int] = ArrayBuffer(1, 2, 3)
+```
+
+* 解決策：APIドキュメントで返り値の型を確認する
+* this.typeなどであれば、そのオブジェクト自身を変更している
+
+---
+
+## 配列同士の==
+
+```scala
+scala> val x = Array(1, 2, 3)
+x: Array[Int] = Array(1, 2, 3)
+
+scala> val y = Array(1, 2, 3)
+y: Array[Int] = Array(1, 2, 3)
+
+scala> x == y
+res2: Boolean = false
+````
+
+* 配列はJVMの配列が使われるため、参照が一致しているかが比較される
+* 解決策（１）： ListやVectorなどのScalaのコレクションに変換する
+* 解決策（２）： Arrays.deepEqualsを使う
+
+```scala
+scala> Arrays.deepEquals(Array("A", "B"), Array("A", "B"))
+res6: Boolean = true
+```
 
 </script></section>
 
