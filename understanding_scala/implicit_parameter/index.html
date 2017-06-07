@@ -52,7 +52,7 @@
 <div class='slides'>
 <section data-markdown data-separator='^\n---$'><script type='text/template'>
 
-## Scalaのimplicit parameterを学ぶ
+## Scalaのimplicit parameter（≒型クラス）を学ぶ
 ## Understanding Scala
 ## 水島宏太 (株式会社ドワンゴ）
 
@@ -72,8 +72,247 @@
 - Scalaの機能の中でもっとも誤解されやすいもの
 - implicit conversionとごっちゃにされやすい
 - 正しく使えば非常に強力
+- こわくないよ！
 
 ---
+
+### 例題
+
+* リストの要素を全て足し合わせた値を返す関数
+* ただし、あとから特定の型を足すことができること
+  * 有理数（Rational）、複素数（Complext）、ベクトル等
+
+---
+
+### 素直な解法
+
+```scala
+def sum(list: List[Int]): Int = {
+  list.foldLeft(0){(r, e) => r + r}
+}
+```
+
+---
+
+### 試してみる
+
+```scala
+sum(List(1, 2, 3)) // => 6
+sum(List(1, 3, 5)) // => 9
+sum(List(1, 5, 15)) // => 21
+```
+
+正しく答えが求められている（ように見える）
+
+---
+
+### 浮動小数点数のリストに適用してみる
+
+```scala
+sum(List(1.5, 2.5, 3.5)) // => 
+```
+
+```
+scala> sum(List(1.5, 2.5, 3.5))
+<console>:13: error: type mismatch;
+ found   : Double(1.5)
+ required: Int
+       sum(List(1.5, 2.5, 3.5))
+                ^
+<console>:13: error: type mismatch;
+ found   : Double(2.5)
+ required: Int
+       sum(List(1.5, 2.5, 3.5))
+                     ^
+```
+
+うまく行かない（整数のリストに限定したため）
+
+---
+
+### 数値っぽいもの全体を足したい
+
+- トレイトを定義してみる
+
+```scala
+trait Additive[A] {
+  def +(that: A)
+}
+class IntAdditive(lhs: Int) extends Additive[Int] {
+  def +(that: Int): Int = lhs + that
+}
+```
+
+- 計算したい全ての値に対してラッパークラスを定義しなければいけない
+  - 現実的ではない
+- リストの要素が空の場合の値が定義できない（インスタンスがなければどうしようもない）
+
+---
+
+## 発想の転換
+
+- 二つの`A`型の値を受け取って、`A`型の値を返すオブジェクトを定義する
+  - A型のゼロに相当する要素も定義する
+
+```scala
+trait Monoid[A] {
+  def plus(a: A, b: A): A
+  def zero: A
+}
+```
+
+---
+
+## Monoidを使って、sumを書き直す
+
+```scala
+def sum[A](list: List[A](m: Monoid[A]): A = {
+  list.foldLeft(m.zero){(a, e) => m.plus(a, e)}
+}
+```
+
+---
+
+## Monoidのインスタンスを定義する
+
+```scala
+object IntMonoid extends Monoid[Int]{
+  def plus(a: Int, b: Int): Int = a + b
+  def zero: Int = 0
+}
+object DoubleMonoid extends Monoid[Double] {
+  def plus(a: Double, b: Double): Double = a + b
+  def zero: Double = 0.0
+}
+```
+
+---
+
+## Monoidのインスタンスを使う
+
+```scala
+List(1, 2, 3, 4, 5)(IntMonoid) // => 15
+List(1.5, 2.5, 3.5)(DoubleMonoid) // => 7.5
+```
+
+Intに対応するMonoidはIntMonoidだとわかっているはず
+Doubleに対応するMonoidはDoubleMonoidだとわかっているはず
+
+==> コンパイラに推論させよう！
+
+---
+
+## implicit parameterの導入（１）
+
+
+```scala
+trait Monoid[A] {
+  def plus(a: A, b: A): A
+  def zero: A
+}
+object Monoid {
+  implicit object IntMonoid extends Monoid[Int]{
+    def plus(a: Int, b: Int): Int = a + b
+    def zero: Int = 0
+  }
+  implicit object DoubleMonoid extends Monoid[Double] {
+    def plus(a: Double, b: Double): Double = a + b
+    def zero: Double = 0.0
+  }
+}
+```
+
+---
+
+## implicit parameterの導入（２）
+
+```scala
+def sum[A](list: List[A])(implicit m: Monoid[A]): A = {
+  list.foldLeft(m.zero){(a, e) => m.plus(a, e)}
+}
+sum(List(1, 2, 3, 4, 5)) // => 15
+sum(List(1.5, 2.5, 3.5)) // => 7.5
+```
+
+型に依存しない`sum`メソッドを手に入れることができた
+
+---
+
+## implicit parameterの仕組み
+
+* implicit修飾子が付いた引数`m: Monoid[A]`があったときに
+  `A`が特定の型に確定していれば
+1. `Monoid`のコンパニオンオブジェクトから`Monoid`のインスタンスを探す
+2. `Monoidの型パラメータ（たとえば`Int`)のコンパニオンオブジェクトを探す
+3. importされたオブジェクトの下に`implicit`宣言されたオブジェクトがないか探す
+
+---
+
+## Scala標準ライブラリにおけるimplicit parameterの利用例
+
+1. `List[T]#sum`: implicitな `NUmeric[T]` のインスタンスがあれば合計値が計算できる
+2. `List[T]#product` : implicitな `Numeric[T]` のインスタンスがあれば全要素を乗算した値が計算できる
+
+---
+
+## 高度なimplicit parameterの使い方
+
+* タプル型 `(A, B)` の値に順序を付けたい
+  * タプル型のソートなどの利用したい
+* タプル型 `(A, B)` は一般には順序が付くかわからない
+* A型同士、B型同士の順次が付く場合にのみ `(A, B)` 型に順序が付くようにしたい
+
+---
+
+## 解決法：implicit parameterが別のimplicit parameterに依存するようにする
+
+```scala
+import scala.math.Ordering
+implicit def tupleOrdering[A, B](implicit a: Ordering[A], b: Ordering[B]): Ordering[(A, B)] = new Ordering[(A, B)] {
+  override def compare(x: (A, B), y: (A, B)): Int = {
+    val (x1, x2) = x
+    val (y1, y2) = y
+    val r1 = a.compare(x1, y1)
+    if(r1 < 0) {
+      -1
+    } else if(r1 > 0){
+      1
+    } else {
+      b.compare(x2, y2)
+    }
+  }
+}
+```
+
+---
+
+## 使い方
+
+```scala
+List((1, 2), (4, 3)).sorted  // => List((1, 2), (4, 3))
+List((4, 3), (1, 2)).sorted // => List((1, 2), (4, 3))
+List((new Object, new Object), (new Object, new Object)).sorted // => error: No implicit Ordering defined for (Object,Object).
+```
+
+---
+
+## 注意点
+
+* implicitなインスタンスは、利用者にとって自然な形で定義する
+  * `tupleOrdering` の例だと、一般的に使われる辞書順で順序を定義した
+* 自然でないimplicitなインスタンスが定義されていると：
+  * 利用者がimplicitなインスタンス定義を見に行く必要がある
+
+---
+
+## まとめ
+
+* implicit parameterによって、オブジェクト指向の多態性では得られない柔軟性が得られた
+  * 特に、対象となる型を後付けで定義できる点
+* implicit parameterがimplicit marameterに依存するような、発展的な使い方を解説した
+* より高度の使い方を知りたい場合：
+  * Haskellの型クラスで検索する
+  * Scalaのライブラリで型クラスが使われているものを探す
 
 </script></section>
 
