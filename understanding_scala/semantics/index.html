@@ -58,31 +58,379 @@
 
 ---
 
-### 私は誰？
+## 私は誰？
 
-- Twitter ID: [@kmizu](https://twitter.com/kmizu)
-- GitHub: [kmizu](https://github.com/kmizu)
-- Love: Nemerle/Rust/Standard ML/Scala...
-- Parsing algorithm enthuasiast
-
----
-
-### Scalaの実行時の挙動
-
-- 一言で言うとJavaとだいだい同じ
-- Scala特有の機能のほとんどはコンパイル時に解決される
-- Javaを知っている人にとっては理解するのは容易
+* Twitter ID: [@kmizu](https://twitter.com/kmizu)
+* GitHub: [kmizu](https://github.com/kmizu)
+* Love: Nemerle/Rust/Standard ML/Scala...
+* Parsing algorithm enthuasiast
 
 ---
 
-### scala-library.jar
+## Scalaの実行時の挙動
 
-- Scalaの標準ライブラリ一式が入ったjarファイル
-- 基本的にこれがリンクされていれば、通常のJavaプログラムとして実行可能
+* 一言で言うとJavaと**ほとんど同じ**
+* Scala特有の機能のほとんどはコンパイル時に解決される
+* Javaを知っている人にとっては理解するのは容易
+* scala-library.jar をリンクしないと実行できない程度
 
 ---
 
+## Scalaプログラムのエントリポイント
+
+* `main` メソッド、たとえば：
+
+```scala
+object Hello {
+  def main(args: Array[String]): Unit = {
+    println("Hello, World")
+  }
+}
+```
+
+* あるいは（ `App` が `main` メソッドを持っている）：
+
+```scala
+object Hello extends App {
+  println("Hello, World")
+}
+```
+
 ---
+
+## メソッド呼び出し式
+
+* 関数内関数を除いた全ての操作はメソッド呼び出し
+  * 演算子の優先順位は考慮される（最初の一文字で決まる）
+  * `:`で終わるメソッドは右結合
+
+```scala`
+1 + 2 // (1).+(2)
+1 + 2 * 3 //  (1).+((2).*(3))
+"Hello".toString
+println("Hello, World") // => Predef.println("Hello, World")
+1 :: 2 :: 3 :: Nil // => ((Nil.::(3)).::(2)).::(1)
+```
+
+---
+
+## while式
+
+* 他の言語のものと挙動は同じなので略
+* ただし、 `while` も式なので `Unit` を返す
+  * それ以外に返すべき値がないので
+
+---
+
+## if式
+
+```scala
+var i = 1
+val x = if(i > 0) "positive" else "negative // "positive"
+i = -1
+val y = if(i > 0) "positive" else "negative // "negative"
+val z = if(i < 0) "negative" // z: Any = "negative"
+```
+
+1. `if` の 条件式が評価される
+2. 条件式の評価結果が `true` なら then 部が `false` なら else部が評価される
+  * else 部がない場合、 `Unit` 型の値 `()` が補われる
+3. 2.の評価結果の値が `if` 式全体の値になる
+
+---
+
+## オブジェクトの生成（new）
+
+```scala
+class Point(val x: Int, val y: Int) {
+  println(s"x = ${x}, ${y})
+}
+val p = new Point(1, 2)
+```
+
+1. `new Point(1, 2)` で `Point` オブジェクトが生成される
+  1. メンバー `x` が 1 に束縛され、 `y` が 2 に束縛される
+  2. コンストラクタ本体（`println(s"x = ${x}, ${y})`）が評価される
+  3. 初期化済みの `Point` インスタンスが反る
+2. 変数 `p` 「が」 生成された `Point` インスタンスに束縛される
+
+--
+
+## メソッドの呼び出し（通常）
+
+```scala
+def add(x: Int, y: Int): Int = x + y
+add(1, 2)
+```
+
+1. 引数 `x` と引数 `y` がそれぞれ 1 と 2 に束縛される
+2. `x + y` を評価しようとする
+3. `x` を評価する // => 1
+4. `y` を評価する // => 2
+5. `x + y (x.+(y))` を評価する // => 1.+(2) 
+6. 3 が返り値になる
+
+---
+
+## メソッドの呼び出し（名前呼び出し）（１）
+
+```scala
+def times(n: Int)(thunk: => Unit): Unit = {
+  var i = 0
+  while(i < n) {
+    thunk
+    i += 1
+  }
+}
+times(3) {
+  println("A")
+}
+```
+
+---
+
+## メソッドの呼び出し（名前呼び出し）（２）
+
+1. 引数 `n` が 3 に `thunk` が 「`println("A")` を評価する式」に束縛される
+2. `{}` 式を評価
+3. `while` 式を評価
+  1. 条件式 `i < n` を評価
+  2. `true` なら `{}` 式を評価。 `false` ならループを抜ける
+  3. `{}` 式の `thunk` 変数を評価する。 
+    * `thunk` 変数は式に束縛されているため、**呼び出し側の式**が評価される
+  4. `i += 1` が評価される。 `i` が1増える
+  5. 1. に戻る
+
+---
+
+## for式（１）
+
+* for式は正確には `foreach` 、 `map` 、 `flatMap` 等のシンタックスシュガー
+* 「Scalaの落とし穴を学ぶ」で言及予定
+*  `for式の振る舞い` というもの自体は存在しない
+* いくつかのケースについて、こう解釈することが可能である、というケースを述べるのに留める
+
+---
+
+## for式（２）
+
+```scala
+for(i <- 1 to 5) {
+  println(i)
+}
+```
+
+1. `1 to 5` で1から5までの範囲を表すオブジェクトが生成される
+2. 範囲の次の値を取得して、`i` をその値に束縛する。残りの値がなければ終了
+3. `{}` 式を評価する
+  1. `println(i)` 式を評価する → `i` が出力される
+4. 2. に戻る
+
+---
+
+## for式（３）
+
+```scala
+for(i <- 1 to 5; j <- 1 to 5) {
+  println(i, j)
+}
+```
+
+1. `1 to 5` で1から5までの範囲を表すオブジェクトが生成される
+2. 範囲の次の値を取得して、`i` をその値に束縛する。残りの値がなければ終了
+3. 残りの部分を `for(j <- 1 to 5) { println(i, j) }` とみなして評価する
+4. 2. に戻る
+
+---
+
+## for式（４）
+
+```scala
+for(i <- 1 to 5) yield i // Vector(1, 2, 3, 4, 5)
+```
+
+1. 新しいコレクション（`Vector`）を作る
+2. `1 to 5` で1から5までの範囲を表すオブジェクトが生成される
+3. 範囲の次の値を取得して、`i` をその値に束縛する。
+  * 残りの値がなければ、値が追加された新しいコレクションを返す
+4. `i` を評価して、その結果をコレクションに追加する
+5. 2 に戻る
+
+---
+
+## for式（５）
+
+```scala
+for(i <- 1 to 5; j <- 1 to 5) yield (i, j) // Vector((1, 1), (2, 2), (3, 3), (4, 4), ...)
+```
+
+1. 新しいコレクション（`Vector`）を作る
+2. `1 to 5` で1から5までの範囲を表すオブジェクトが生成される
+3. 範囲の次の値を取得して、`i` をその値に束縛する。
+  * 残りの値がなければ、値が追加された新しいコレクションを返す
+4. 残りの部分を、 `for(j <- 1 to 5) yield (i, j)` とみなして評価する
+  * 生成されたコレクションを分解して、1で作ったコレクションに追加する
+5. 2. に戻る
+
+---
+
+## for式（５） 注意点
+
+* これまでは、よくあるケースの解釈を示しただけ
+* 実際の `for` 式の意味は定義されたデータ型によって異なる
+  * `Future`
+  * `Option`
+  * `Try`
+* 正確な理解のためには、どのように展開されるかを知る必要がある
+  * 詳細な仕様は[Scala Language Specification](https://www.scala-lang.org/files/archive/spec/2.12/06-expressions.html#for-comprehensions-and-for-loops) に
+    * （ここまで詳しく知る必要はない）
+
+---
+
+## match式（１）
+
+```scala
+1 match {
+  case 1 => "one"
+  case 2 => "two"
+  case 3 => "three"
+}
+```
+
+* 対象の値である1が case のどのパターンと合うかを上から照合する
+* `case 1`にマッチするので `"one"` が反る
+
+---
+
+## match式（２）
+
+```scala
+"one" match {
+  case "one" => "one"
+  case "two" => "two"
+  case "three" => "three"
+}
+```
+
+* 文字列同士のマッチ（は任意の値の比較ができる）
+
+---
+
+## match式（３）
+
+```scala
+List(1, 2, 3) match {
+  case List(1, 2, 3) => 1
+  case List(4, 5, 6) => 2
+  case List(7, 8, 9) => 3
+}
+```
+
+* 構造を持ったデータ同士を照合することもできる
+
+---
+
+## match式（４）
+
+```scala
+List(1, 2, 3) match {
+  case List(1, 2, x) => x
+}
+```
+
+* 一部が不明な場合に、変数パターン（ここでは `x`）が使える
+* パターンにマッチし、変数 `x` が3に束縛される（xのスコープは次のcaseまで）
+
+---
+
+## match式（５）
+
+
+```scala
+List(1, 2, 3) match {
+  case 1::xs => xs // => List(2, 3)
+}
+```
+
+* 変数パターンは構造を持ったデータにもマッチする
+
+---
+
+## match式（７）
+
+```scala
+def reverse[A](list: List[A]): List[A] = {
+  def go(accumulator: List[A], rest: List[A]): List[A] = rest match {
+    case x :: xs => go(x :: accumulator, xs)
+    case _ => accumulator
+  }
+  go(Nil, list)
+}
+```
+
+* パターンマッチは（末尾）再帰関数と相性が良い
+
+---
+
+## match式（８）
+
+```scala
+sealed trait E
+case class Add(l: E, r: E) extends E
+case class Sub(l: E, r: E) extends E
+case class Mul(l: E, r: E) extends E
+case class Div(l: E, r: E) extends E
+case class Num(v: Int) extends E
+def eval(e: E): Int = e match {
+  case Add(l, r) => eval(l) + eval(r)
+  case Sub(l, r) => eval(l) - eval(r)
+  case Mul(l, r) => eval(l) * eval(r)
+  case Div(l, r) => eval(l) / eval(r)
+  case Num(v) => v
+}
+eval(Add(Num(1), Mul(Num(2), Num(3)))) // (1 + 2 * 3) => 7
+eval(Mul(Add(Num(1), Num(2)), Add(Num(3), Num(4)))) // (1 + 2) * (3 + 4) => 21
+```
+
+* 自分で作ったデータ構造（特に木構造）に対するパターンマッチを行うこともできる
+* コンパイラやインタプリタなどの言語処理系を作るときにも役に立つ機能
+
+---
+
+## match式（９）
+
+```scala
+object NaturalNumber {
+  def unapply(s: String): Option[Int] = try {
+    val n = s.toInt; if(n >= 0) Some(n) else None
+  } catch { case e: NumberFormatException => None }
+}
+"100" match {
+  case NaturalNumber(n) => "nat" // => "nat"
+  case _ => "not nat"
+}
+"-1" match {
+  case NaturalNumber(n) => "nat"
+  case _ => "not nat" // => "not nat"
+}
+```
+
+* `unapply` を定義したオブジェクトはパターンとして利用できる
+  * Extractorと呼ばれる機能
+* 全てのケースはExtractorの特殊形として考えられる
+
+---
+
+## まとめ
+
+* 各種制御構文を中心にScalaの特徴的な部分を紹介
+* オブジェクトの生成
+* 名前呼び出し
+* for式
+* match式
+* if式
+
+* match式、for式の挙動を理解するのが重要
 
 </script></section>
 
