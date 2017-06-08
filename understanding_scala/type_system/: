@@ -67,7 +67,7 @@
 
 ---
 
-## Scalaの型システム（概要）
+### Scalaの型システム（概要）
 
 - 非常に表現力が強い
   - Javaなどと比べて強い制約を表現できる
@@ -82,7 +82,7 @@
 
 ---
 
-## Scalaの型階層（図）
+### Scalaの型階層（図）
 
 ```
 Any
@@ -107,7 +107,7 @@ Any
 
 ---
 
-## Any：あらゆる型のスーパータイプ
+### Any：全ての型のスーパータイプ
 
 * どんな型の値でも`Any`型の変数に代入できる
 * 最小限のメソッドのみを定義
@@ -118,95 +118,20 @@ Any
 
 ---
 
-## AnyVal: あらゆる値型のスーパークラス
+### AnyVal: 全ての値型のスーパークラス
 
 * Javaでいうプリミティブ型をまとめたもの
-  * `Byte`, `Short`, Char`, `Int`, `Long`
-  * `Float`, `Double`, `Boolan`, `Unit`
-* `AnyVal` の変数には `null` を入れられない
-* 便宜上存在しているが、実際に `AnyVal` に意味があることは少ない
 
----
-
-## AnyRef: あらゆる参照型のスーパータイプ
+### AnyRef: 全ての参照型のスーパータイプ
 
 * Javaでいう `java.lang.Object` に相当
 * 参照型の全ての値は `AnyRef` に代入できる
 * 参照の等価性を判定するメソッドを定義
   * `eq`
 
----
-
-## Nothing：あらゆる型のサブタイプ
-
-* Javaでは該当する型が存在しない
-* あらゆる型のサブタイプ→あらゆる型の変数に代入可能
-* あらゆる型のサブタイプ→ `Nothing` 型の値は存在しない
-* 存在意義：
-  * 必ず例外を投げて正常に `return` しないメソッドの型になる
-  * 後述するジェネリクスと組み合わせて使う
+### Nothing：全ての型のサブタイプ
 
 ---
-
-## Null: 全ての参照型のサブタイプ
-
-* Javaでは陽に出てこないが、JLSでは null type として言及されている
-* あらゆる参照型のサブタイプ→値は `null` のみ
-* `null` はあらゆる参照型の値に代入可能
-
----
-
-## ユーザ定義の型
-
-* `AnyRef` を直接・間接に継承したもの
-* 例外として、 Value Type は `AnyVal` を継承する
-
----
-
-## ジェネリクス（１）
-
-* 最近の静的型付き言語のほとんどが持っている
-  * Java, C#, Rust, Kotlin, Ceylon, Haskell, ML, ...
-* 型をパラメータとして取ることを許すことによって
-  柔軟な型定義が可能
-
-```scala
-val strings = new java.util.ArrayList[String]
-strings.add("AAA")
-strings.add(1) // コンパイルエラー
-```
-
----
-
-## ジェネリクス（２）
-
-```scala
-case class Cons[T](head: T, tail: Link[T])
-val links = Cons(1, Cons(2, Cons(3, null))) // 1, 2, 3からなる単方向連結リストのつもり
-```
-
-* `null` を使いたくない！
-
----
-
-## ジェネリクス（３）
-
-```scala
-sealed trait Link[+T] // + が肝
-case class Cons[T](head: T, tail: Link[T]) extends Link[T]
-case object Empty extends Link[Nothing]
-val cons = Cons(1, Cons(2, Cons(3, Empty))) // 1, 2, 3 からなら単方向連結リストのつもり
-```
-
-* `null` を排除できた。何故？：共変と反変へ
-
----
-
-## 共変（１）
-
----
-
-## 反変（１）
 
 </script></section>
 
