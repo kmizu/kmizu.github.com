@@ -244,6 +244,23 @@ m.put("foo, "bar")
 Option(m.get("baz")) + 1 // => コンパイルエラー
 ```
 
+---
+
+## Set#mapの罠
+
+```scala
+val a = Set(1, 2, 3, 4, 5)
+val b = a.map(_ => 2) // => 他の要素が消えて Set(1)
+```
+
+* Scalaのコレクションは可能な限り自身と同じ型を返そうとするため
+* 解決策：`toList`などで他のコレクションに変換する
+
+```scala
+val a = Set(1, 2, 3, 4, 5)
+val b = a.toList.map(_ => 2) // => List(1, 1, 1, 1, 1)
+```
+
 </script></section>
 
       </div>
