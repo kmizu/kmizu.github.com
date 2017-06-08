@@ -195,7 +195,7 @@ val links = Cons(1, Cons(2, Cons(3, null))) // 1, 2, 3からなる単方向連�
 sealed trait Link[+T] // + が肝
 case class Cons[T](head: T, tail: Link[T]) extends Link[T]
 case object Empty extends Link[Nothing]
-val cons = Cons(1, Cons(2, Cons(3, Empty))) // 1, 2, 3 からなら単方向連結リストのつもり
+val cons = Cons(1, Cons(2, Cons(3, Empty))) // 1, 2, 3 からなる単方向連結リストのつもり
 ```
 
 * `null` を排除できた。何故？：共変と反変へ
@@ -204,9 +204,209 @@ val cons = Cons(1, Cons(2, Cons(3, Empty))) // 1, 2, 3 からなら単方向連�
 
 ## 共変（１）
 
+* 一見うまく行きそうな次の例を考える：
+
+```scala
+val x: Array[String] = ("A", "B", "C")
+val y: Array[Any] = x
+```
+
+これは実際にはコンパイルを通らない（Javaではコンパイルを通る）。何故か？
+
+```scala
+y(0) = 1 // Stringしか入れられないはずの配列にIntが入っている！
+```
+
+---
+
+## 共変（２）
+
+* `String` と `Any` について `String` が `Any` のサブタイプであるならば
+  `Array[String]` が `Array[Any]` のサブタイプであるとき、`Array` は共変である
+  という
+
+* 実際には、Scalaの `Array` は共変ではない（不変）。一方、Javaの配列は共変だが
+  実行時に例外が投げられる危険性がある
+
+* 共変は便利だが、制限なしで取り扱うのは危険
+  * 何らかの制限が必要 → 共変性に関する注釈
+
+---
+
+## 共変（３）
+
+```scala
+sealed trait Link[+T] // + が肝
+case class Cons[T](head: T, tail: Link[T]) extends Link[T]
+case object Empty extends Link[Nothing]
+val cons = Cons(1, Cons(2, Cons(3, Empty))) // 1, 2, 3 からなる単方向連結リストのつもり
+```
+
+* `Link[+T]` のように、型パラメータの前に `+` が付いている
+  * `Link` は共変であるという注釈
+  * 共変では安全でないプログラムはコンパイルエラー
+* `Empty` は `Link[Nothing]` を継承している
+  * forall X. `Link[Nothing]` is a `List[X]` 
+  * `Empty` は どのような `Link` の変数にも代入できる
+  * `Empty` はただ一つのインスタンス
+    * `Link` の終端を表すのに使うことができる！
+
 ---
 
 ## 反変（１）
+
+* 関数の型は引数の型に関して、共変では**ない**
+
+```scala
+val x: Int => Any = {i => i}
+val y: Any => Any = x
+--------------------------------
+error: type mismatch;
+ found   : Int => Any
+ required: Any => Any
+       val y: Any => Any = x
+                           ^
+```
+
+* 仮に `y` に文字列を引数として与えて呼び出すと…
+
+```scala
+y("FOO") // x は Intしか引数として受け取らないはずなのに、Stringを渡せてしまう。まずい
+```
+
+---
+
+
+## 反変（２）
+
+* 関数の型は引数の型に関して、反変であるという
+
+```scala
+val x: Any => Any = {i => i}
+val y: Int => Any = x // OK
+```
+
+* `forall X, Y, Z. (X => Z) is a (Y =>Z) iff Y is a X`
+  * このような性質を反変という
+* Scalaでは、`[-T]` のように型パラメータに `-` を付けると、反変になる
+
+---
+
+## 構造的部分型（１）
+
+* 継承関係によらず、必要なメソッドを持っていれば、要求を満たす、としたい場合がある
+  * 動的型付き言語における`duck typing`的な考え
+
+```scala
+def using(r)(f) = try {
+  f(r)
+} finally {
+  r.close()
+}
+```
+
+* こんな風に書きたい
+
+---
+
+## 構造的部分型（２）
+
+* Scalaでは以下のように書ける
+
+```scala
+def using[T <: { def close }, U](r: T)(f: T => U): U = try {
+  f(r)
+} finally {
+  r.close()
+}
+using(new FileInputStream("hoge.txt"){s =>
+  ...
+}
+using(new FileWriter("hoghoge.txt"){s =>
+  ...
+}
+```
+
+* 内部的にはリフレクションを使っているので多用には注意
+* `import scala.language.reflecticveCalls` を付けないと警告が出る
+
+---
+
+## 高階多相（１）
+
+* `List` などのコレクションや `Option` など様々な型が `map` メソッドを持っている
+* とにかく `map` を持っている型を抽象化したい
+* そのような型 `Mapper` を定義してみる
+
+```scala
+trait Mapper[C] {
+  def map[A,B](c: C)(f: C => C): C
+}
+```
+
+* `C` の要素の型は `map` の呼び出しによって変わるので通常のジェネリクスでは表現できない
+
+---
+
+## 高階多相（２）
+
+```scala
+trait Mapper[C[_]] {
+  def map[A, B](c: C[A])(f: A => B): C[B]
+}
+object ListMapper extends Mapper[List] {
+  def map[A, B](c: List[A])(f: A => B): List[B] = c.map(f)
+}
+object OptionMapper extends Mapper[Option] {
+  def map[A, B](c: Option[A])(f: A => B): Option[B] = c.map(f)
+}
+```
+
+* `Mapper` の `C[_]` という宣言が肝
+  * 通常の型ではなく、*型コンストラクタ* を引数に取ることを表す宣言
+  * 型コンストラクタとは、ジェネリックなクラスに型が与えられる前の名前のこと
+    * `List[T]` なら `List`
+    * `Option[T]` なら `Option`
+
+---
+
+## 高階多相（３）
+
+```scala
+trait Mapper[C[_]] {
+  def map[A, B](c: C[A])(f: A => B): C[B]
+}
+object Mapper {
+  implicit object ListMapper extends Mapper[List] {
+    def map[A, B](c: List[A])(f: A => B): List[B] = c.map(f)
+  }
+  implicit object OptionMapper extends Mapper[Option] {
+    def map[A, B](c: Option[A])(f: A => B): Option[B] = c.map(f)
+  }
+}
+def add2[C[_]](c: C[Int])(implicit m: Mapper[C]): C[Int] = {
+  m.map(c)(n => n + 2)
+}
+add2(List(1, 2, 3)) // => List(3, 4, 5)
+add2(Option(1)) // => Some(3)
+```
+
+* implicit parameterについては後述
+
+---
+
+## まとめ
+
+* Scalaは高度な静的型システムを持った言語
+* ジェネリクス
+* 共変・反変
+* 構造的部分型
+* 高階多相
+  * と implicit parameter（≒型クラス）の組み合わせ（後述）
+* パス依存型（今回は言及しない）
+
+
+
 
 </script></section>
 
