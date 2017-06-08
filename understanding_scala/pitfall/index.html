@@ -157,6 +157,30 @@ val d = for(a ← a1; b ← b1) yield a + b
 
 ---
 
+## 意図しない結果のパターンマッチ
+
+```scala
+val classFileHeader = 0xCAFEBABE
+val header = 0XFFFFFFFF
+header match {
+  case classFileHeader => "success"  // => こちらが選ばれる
+  case _ => "error"
+}
+```
+
+* 大文字に置き換える、あるいはバッククオートで囲む
+
+```scala
+val ClassFileHeader = 0xCAFEBABE
+val header = 0XFFFFFFFF
+header match {
+  case ClassFileHeader => "success" 
+  case _ => "error" // => こちらが選ばれる
+}
+```
+
+---
+
 ## 誤った正規表現のパターンマッチ
 
 ```scala
