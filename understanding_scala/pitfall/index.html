@@ -4,9 +4,9 @@
 	<head>
 		<meta charset="utf-8">
 
-    <title>Scalaの落とし穴を学ぶ</title>
+    <title>Scalaの罠・落とし穴を学ぶ</title>
 
-		<meta name="description" content="Scalaの落とし穴を学ぶ">
+		<meta name="description" content="Scalaの罠・落とし穴を学ぶ">
 		<meta name="author" content="Kota Mizushima">
 
 		<meta name="apple-mobile-web-app-capable" content="yes">
@@ -52,7 +52,7 @@
 <div class='slides'>
 <section data-markdown data-separator='^\n---$'><script type='text/template'>
 
-## Scalaの落とし穴を学ぶ
+## Scalaの罠・落とし穴を学ぶ
 ## Understanding Scala
 ## 水島宏太 (株式会社ドワンゴ）
 
@@ -260,6 +260,71 @@ val b = a.map(_ => 2) // => 他の要素が消えて Set(1)
 val a = Set(1, 2, 3, 4, 5)
 val b = a.toList.map(_ => 2) // => List(1, 1, 1, 1, 1)
 ```
+
+---
+
+## for式はシンタックスシュガー（１）
+
+```scala
+for(x <- 1 to 10) println(i)
+```
+
+は
+
+```scala
+(1 to 10).foreach(x => println(i))
+```
+
+と同じ
+
+---
+
+## for式はシンタックスシュガー（２）
+
+```scala
+for(x <- 1 to 10) yield x * 2
+```
+
+は
+
+```scala
+(1 to 10).map(x => x * 2)
+```
+
+のシンタックスシュガー
+
+---
+
+## for式はシンタックスシュガー（３）
+
+```scala
+for(x <- 1 to 10; y <- 1 to 10) yield x * y
+```
+
+は
+
+```scala
+(1 to 10).flatMap(x => (1 to 10).map(y => x * y))
+```
+
+のシンタックスシュガー
+
+---
+
+## for式はシンタックスシュガー（まとめ）
+
+* for式は`foreach` 、 `map` 、 `flatMap` などに展開される
+* コレクションやシーケンス以外のデータ型にも使える
+  * Option
+  * Either (from Scala 2.12)
+
+---
+
+## まとめ
+
+* Scalaにも当然ながら落とし穴がある
+* 言語の構文に関するものと標準ライブラリに関するものがある
+* 致命的な落とし穴はあまりないので、心配し過ぎる必要はない
 
 </script></section>
 
