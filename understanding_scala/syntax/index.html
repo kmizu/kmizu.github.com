@@ -160,16 +160,175 @@
 
 ## Scalaの文法の大枠
 
-Chapter 13 Syntax Summary より（アレンジを加えたもの）
+* [Chapter 13 Syntax Summary](https://www.scala-lang.org/files/archive/spec/2.12/13-syntax-summary.html) から
+  * 本質的でない部分を削除した
 
-<CompilationUnit>   :: = <PackageDeclaration> <TopLevel>*
-<TopLevel>          :: = (<ClassDeclaration> | <ObjectDeclaration> | <Packaging>)*
-<ClassDeclaration>  :: = ...
-<ObjectDeclaration> :: = ...
-<Packagging>        :: = "package" "{ ... "}"
+```
+<CompilationUnit>   ::= <PackageDeclaration> <TopLevel>*
+<TopLevel>          ::= (<ClassDeclaration> | <TraitDeclaration> | <ObjectDeclaration> 
+                        | <Packaging> | <PackageObject> | <Import> )*
+<ClassDeclaration>  ::= ...
+<ObjectDeclaration> ::= ...
+<Packaging>        ::= "package" "{" ... "}"
+```
 
-* トップレベルには主にクラス宣言、オブジェクト宣言が来ることがわかる
-* パッケージ宣言はトップレベルのどこにでも出現できる
+---
+
+## クラス定義の文法
+
+* 例によってアレンジ
+
+```
+<ClassDefinition>     ::= "class" <ID> [<TypeParameters>] <ClassParameters> <ClassTemplateOption>
+<ClassParameters>     ::= "( [<ClassParameter> {"," <ClassParameter>)}] ")"
+<ClassTemplateOption> ::= "extends" <ClassTemplate>
+<ClassTemplate>       ::= <Constructor> {"with" <AnnotatedType>} { <TemplateBody> }
+<AnnotatedType>       ::= ...
+<Constructor>         ::= <AnnotatedType> {<Expressions>}
+<ClassTemplate>       ::= 
+<TempalteBody>        ::= クラス定義の本体に書けるもの
+```
+
+* `"extends ... {with ...}"` という形式の文法
+  * トレイトは`with`に書く、という一般認識はちょっと違う
+
+---
+
+## クラス定義本体の文法
+
+```
+<TemplateBody>        ::= <TemplateStatement> {"," <TemplateStatement>}
+<TemplateStatement>   :: = <Import> | <Definition> | <Declaration> | <Expression>
+```
+
+* クラス本体には以下のものが書ける
+  * インポート宣言
+  * 変数定義/宣言
+  * 関数定義/宣言
+  * 式
+    * クラスの直下に `println("Hoge")` 等の式が書ける
+
+---
+
+## トレイト定義の文法
+
+```
+<TraitDefinition>      ::= "trait" <ID> [<TypeParameters>] <TraitTemplateOption>
+<TraitTemaplteOption>  ::= "extends" <TraitTemplate>
+<TraitTemplate>        ::= <AnnotatedType> {"with" <AnnotatedType>} [<TemplateBody>]
+```
+
+* クラス定義とほとんど同じ形式になっている
+* クラス定義本体と全く同じことが書ける（！）
+  * もちろん、あくまで「文法上は」
+
+---
+
+## オブジェクト定義の文法
+
+```
+<ObjectDefinition>      ::= "object" <ID> <ClassTemplateOption>
+```
+
+* 文法はほとんど丸々クラス定義のものを流用
+
+---
+
+## ここまでのまとめ
+
+* 以下の三つのトップレベル定義は本体にほとんど同じことが書ける
+  * クラス定義
+  * トレイト定義
+  * オブジェクト定義
+* **文法上は**、これら三つの要素を全て覚える必要はない
+  * 共通部分と差分を把握すれば良い
+
+---
+
+## 式の文法
+
+```
+<Expression> ::= "if" "(" <Expression> ")" <Expression> ["else" <Expression>]
+                            | "while" "(" <Expression> ")" <Expression>
+                            | "try" ("{" <Block> "}" | <Expression)  ...
+                            | "do" ... "while" ...
+                            | "for" ...
+                            | "throw" ...
+                            | "return" ...
+                            | [<SimpleExpression> "."] <ID> "=" <Expression>
+                            | <SimpleExpression> <ArgumentExpressions> "=" <Expression>
+                            | <PostfixExpression>
+                            | <PostfixExpression> <Ascription>
+                            | <PostfixExpression> "match" "{" <CaseClauses> "}"
+```
+
+* 実は大したことはない
+
+---
+
+## 後置式（PostfixExpression）の文法
+
+```
+<PostfixExpression> ::= <InfixExpression> <ID>
+<InfixExpression> ::= <PrefixExpression>
+                                   | <InfixExpression> <ID> <InfixExpression>
+<PrefixExpression> ::= [("-" | "+" | "~" | "!) <SimpleExpression>]
+<SimpleExpression> ::= <NewObject> | <BlockExpression> | <SimpleExpression1> ["_"]
+```
+
+* `InfixExpression` は `1 + 2` とか `x ++ y` とか
+   * 中置式の文法
+* `PrefixExpression` は なんかの式にプレフィクスとして付加可能な記号を定義 
+   * 前置式の文法
+* `SimpleExpression` は `new` によるオブジェクト生成や `"{" ... "}"` も式であると言っている
+
+---
+
+## 単純式（SimpleExpression1）の文法
+
+```
+<SimpleExpression1>       ::= <Literal>
+                                               | <Path>
+                                               | "_"
+                                               | "(" [<Expressions>] ")" // タプル
+                                               | <SimpleExpression> "." <ID> // メンバーの参照
+                                               | <SimpleExpression> <TypeArguments> // 型パラメータの適用
+                                               | <SimpleExpression> <ArgumentExpressions> // 関数呼び出し形式
+                                               | <XmlExpression> // XMLリテラル
+<ArgumentExpressions>  ::= "(" <Expressions> ")" // 通常の関数呼び出しの引数
+                                               | "(" [<Expressions> ","] <PostfixExpression> ":_*" // 可変長引数関数の呼び出し引数
+```
+
+---
+
+## まとめ
+
+* プログラムのどこに何を書けるか把握するにはBNFを読むのが速い
+* トップダウンに、より上位の要素から下位の要素を見ていくと構造がよくわかる
+* 式は単体でそれなりに複雑なので、注意して見よう
+  * 特に式に関係する規則の再帰に注意
+
+---
+
+## 補足というか言い訳
+
+* 本質的だと考えたものをアレンジしたものです
+* 以下の要素はあえて無視しました
+  * アクセス修飾子
+  * `"implicit"` 修飾子
+  * パターンマッチのパターン
+  * プレースホルダ構文（Scalaにおける鬼門）
+  * 無名関数の構文
+  * 変数宣言の構文
+* 今回の発表を手がかりに言語仕様のBNFを読んでみてください
+
+---
+
+## 発表時間が余ったときのために
+
+* 知りたい構文について質問してください
+  * 頑張って回答してみます
+    * 自分も全部丸暗記しているわけではない
 
 </script></section>
 
@@ -206,4 +365,4 @@ Chapter 13 Syntax Summary より（アレンジを加えたもの）
 		</script>
 
 	</body>
-</html>
+</html> 
