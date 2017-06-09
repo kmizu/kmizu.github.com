@@ -76,7 +76,7 @@
 
 ---
 
-### 解決策：BNFを元にして構文を理解する
+## 解決策：BNFを元にして構文を理解する
 
 - 構文の全体像を理解できる
   - Scalaを含む多くの言語は構文をBNF（拡張BNF）で定義している
@@ -85,16 +85,44 @@
 
 ---
 
-### 復習BNF
+## 復習BNF
 
-- 算術演算の構文
+算術演算の構文
+
+* 左再帰形式
 
 ```bnf
-<expression> ::= <additive> (("+" | "-") <additive>)*
-<primary>    ::= <parimary> (("*" | "/") <primary>)*
+<expression> ::= <expression> (("+" | "-") <additive>
+<additive>   ::= <additive>  (("*" | "/") <primary>
 <primary>    ::= "(" <expression> ")" | <number>
 <number>     ::= ...
 ```
+
+* 繰り返し形式
+
+```bnf
+<expression> ::= <additive> (("+" | "-") <additive>)*
+<primary>    ::= <primary> (("*" | "/") <primary>)*
+<primary>    ::= "(" <expression> ")" | <number>
+<number>     ::= ...
+```
+
+---
+
+## JSONの構文
+
+```bnf
+<expression> ::= <object> | <array> | <string> | <number
+<object>     ::= "{"
+  [(<string> ":" <expression>) ("," <string> ":" <expression>)*]
+"}"
+<array>      ::= "[" [<expression> ("," <expression>)*] "]"
+<string>     :: = """ ... """
+<number>     :: = ...
+```
+
+* JSONの構文はとってもシンプル
+  * ただし、空白は考慮していない
 
 </script></section>
 
