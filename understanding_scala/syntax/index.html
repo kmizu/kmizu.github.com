@@ -107,25 +107,28 @@
 ## JSONの構文
 
 ```bnf
-<expression> ::= <object> | <array> | <string> | <number
+<expression> ::= <string> | <number> | <object> | <array> | <bool> | <null>
 <object>     ::= "{"
   [(<string> ":" <expression>) ("," <string> ":" <expression>)*]
 "}"
 <array>      ::= "[" [<expression> ("," <expression>)*] "]"
-<string>     :: = """ ... """
-<number>     :: = ...
+<string>     ::= """ ... """
+<bool>       ::= "true" | "false"
+<null>       ::= "null"
+<number>     ::= ...
 ```
 
 * JSONの構文はシンプル
+* [100行程度で実装できる](https://github.com/kmizu/nson/blob/releases/0.0.2/src/main/scala/com/github/kmizu/nson/NValueParser.scala)
 
 ---
 
 ## BNFの効用
 
-* あるプログラムが言語の構文に従っているかを**機械的に判定できる**
-  * 人間は機械ではないのでミスはあるが
+* あるプログラムが言語の構文に従っているかを**機械的に**判定できる
+  * もちろん、人間は機械ではないのでミスはある
 * あるプログラムが構文的に正しいことを、コンパイラに頼ることなく確信できる
-  * 人間は機械ではないのでやっぱりミスがあるが
+  * もちろん、人間は機械ではないのでミスはある
 * 文法上の落とし穴もあらかじめ把握できる
 
 ---
@@ -133,8 +136,12 @@
 ## BNFの限界
 
 * BNFが表現可能なのは文脈自由言語（CFG）におさまる範囲
+  * 文脈依存言語は表現不可能
 * 多くのプログラミング言語はCFGに収まらない部分を持っている
-  * e.g. typedef（C言語）、ドットの解釈（Java）、インデントベースの構文（Python）
+  * typedef（C言語）
+  * ドットの解釈（Java）
+  * インデントベースの構文（Python）
+  * ヒアドキュメント（Ruby）
 * BNFに収まらない部分は自然言語によって記述される
   * 注意が必要
 
@@ -145,7 +152,7 @@
 * Scalaの言語仕様書（2.12まで対応）
 * 構文については大体書いてある
 * 型システムの細かいところは色々抜けがある
-* いざというときにSLSを読めると便利！
+* いざというときにSLSを読めると便利
 
 ---
 
