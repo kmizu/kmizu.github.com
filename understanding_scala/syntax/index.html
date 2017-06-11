@@ -7,7 +7,7 @@
     <title>Scalaの構文を学ぶ</title>
 
 		<meta name="description" content="Scalaの構文を学ぶ">
-		<meta name="author" content="Kota Mizushima">
+		<meta name="author" content="水島宏太">
 
 		<meta name="apple-mobile-web-app-capable" content="yes">
 		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -54,7 +54,7 @@
 
 ## Scalaの構文を学ぶ
 ## Understanding Scala
-## 水島宏太 (株式会社ドワンゴ）
+## 水島宏太
 
 ---
 
@@ -86,7 +86,7 @@
 
 * 左再帰形式
 
-```bnf
+```
 <expression> ::= <expression> (("+" | "-") <additive>
 <additive>   ::= <additive>  (("*" | "/") <primary>
 <primary>    ::= "(" <expression> ")" | <number>
@@ -95,9 +95,9 @@
 
 * 繰り返し形式
 
-```bnf
+```
 <expression> ::= <additive> (("+" | "-") <additive>)*
-<primary>    ::= <primary> (("*" | "/") <primary>)*
+<additive>    ::= <primary> (("*" | "/") <primary>)*
 <primary>    ::= "(" <expression> ")" | <number>
 <number>     ::= ...
 ```
@@ -106,13 +106,13 @@
 
 ## JSONの構文
 
-```bnf
+```
 <expression> ::= <string> | <number> | <object> | <array> | <bool> | <null>
 <object>     ::= "{"
   [(<string> ":" <expression>) ("," <string> ":" <expression>)*]
 "}"
 <array>      ::= "[" [<expression> ("," <expression>)*] "]"
-<string>     ::= """ ... """
+<string>     ::= ...
 <bool>       ::= "true" | "false"
 <null>       ::= "null"
 <number>     ::= ...
@@ -138,12 +138,11 @@
 * BNFが表現可能なのは文脈自由言語（CFG）におさまる範囲
   * 文脈依存言語は表現不可能
 * 多くのプログラミング言語はCFGに収まらない部分を持っている
-  * typedef（C言語）
+  * `typedef`（C言語）
   * ドットの解釈（Java）
   * インデントベースの構文（Python）
   * ヒアドキュメント（Ruby）
 * BNFに収まらない部分は自然言語によって記述される
-  * 注意が必要
 
 ---
 
@@ -163,10 +162,9 @@
 
 ```
 <CompilationUnit>   ::= <PackageDeclaration> <TopLevel>*
-<TopLevel>          ::= (<ClassDeclaration> | <TraitDeclaration> | <ObjectDeclaration> 
-                        | <Packaging> | <PackageObject> | <Import> )*
-<ClassDeclaration>  ::= ...
-<ObjectDeclaration> ::= ...
+<TopLevel>          ::= (<ClassDefinition> | <TraitDefinition> | <ObjectDefinition> | <Packaging> | <PackageObject> | <Import> )*
+<ClassDefinition>  ::= ...
+<ObjectDefinition> ::= ...
 <Packaging>        ::= "package" "{" ... "}"
 ```
 
@@ -178,17 +176,17 @@
 
 ```
 <ClassDefinition>     ::= "class" <ID> [<TypeParameters>] <ClassParameters> <ClassTemplateOption>
-<ClassParameters>     ::= "( [<ClassParameter> {"," <ClassParameter>)}] ")"
 <ClassTemplateOption> ::= "extends" <ClassTemplate>
+<ClassParameters>     ::= "( [<ClassParameter> {"," <ClassParameter>)}] ")"
 <ClassTemplate>       ::= <Constructor> {"with" <AnnotatedType>} { <TemplateBody> }
-<AnnotatedType>       ::= ...
 <Constructor>         ::= <AnnotatedType> {<Expressions>}
+<AnnotatedType>       ::= ...
 <ClassTemplate>       ::= 
 <TempalteBody>        ::= クラス定義の本体に書けるもの
 ```
 
 * `"extends ... {with ...}"` という形式の文法
-  * トレイトは`with`に書く、という一般認識はちょっと違う
+  * トレイトは`with`に書く、という認識はちょっと違う
 
 ---
 
@@ -217,8 +215,8 @@
 ```
 
 * クラス定義とほとんど同じ形式になっている
-* クラス定義本体と全く同じことが書ける（！）
-  * もちろん、あくまで「文法上は」
+* クラス定義本体と全く同じことが書ける
+  * あくまで「文法上は」
 
 ---
 
@@ -310,8 +308,8 @@
 
 ## 補足というか言い訳
 
-* 本質的だと考えたものをアレンジしたものです
-* 以下の要素はあえて無視しました
+* 本質的だと考えたもの以外を削除したものです
+* 以下の要素等はあえて無視しました
   * アクセス修飾子
   * `"implicit"` 修飾子
   * パターンマッチのパターン
@@ -325,8 +323,9 @@
 ## 発表時間が余ったときのために
 
 * 知りたい構文について質問してください
-  * 頑張って回答してみます
-    * 自分も全部丸暗記しているわけではない
+* 頑張って回答してみます
+* 自分も全部丸暗記しているわけではない
+  * 必要になればSLS読めばいいので
 
 </script></section>
 
