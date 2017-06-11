@@ -7,7 +7,7 @@
     <title>Scalaの謎・落とし穴を学ぶ</title>
 
 		<meta name="description" content="Scalaの謎・落とし穴を学ぶ">
-		<meta name="author" content="Kota Mizushima">
+		<meta name="author" content="水島宏太">
 
 		<meta name="apple-mobile-web-app-capable" content="yes">
 		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -54,7 +54,7 @@
 
 ## Scalaの謎・落とし穴を学ぶ
 ## Understanding Scala
-## 水島宏太 (株式会社ドワンゴ）
+## 水島宏太
 
 ---
 
@@ -62,21 +62,21 @@
 
 - 色々ある
 - 多くはコンパイル時にエラーになるので神経質になる必要はない
-- ただし、一部は実行時にハマる要因になる
+- 一部は実行時にハマる要因になる
   - 気をつけよう
 
 ---
 
-## Unitを返す関数を意図せず書いてしまう
+## `Unit` を返す関数を意図せず書いてしまう
 
 ```scala
 def double(x: Int) {
   x * 2
 }
-double(2) # => ()
+double(2) // => ()
 ```
 
-解決策：明示的に型を書く
+* 解決策：明示的に型を書く
 
 ```scala
 def double(x: Int): Int = {
@@ -93,7 +93,7 @@ double(2) # => 4
 scala> val buffer = scala.collection.mutable.Buffer(1, 2, 3)
 buffer: scala.collection.mutable.Buffer[Int] = ArrayBuffer(1, 2, 3)
 
-scala> buffer.drop(1)
+scala> buffer.drop(1) // dropはbufferを変更しない
 res0: scala.collection.mutable.Buffer[Int] = ArrayBuffer(2, 3)
 
 scala> buffer
@@ -101,11 +101,11 @@ res1: scala.collection.mutable.Buffer[Int] = ArrayBuffer(1, 2, 3)
 ```
 
 * 解決策：APIドキュメントで返り値の型を確認する
-* this.typeやUnitならオブジェクト自身を変更している
+* `this.type` や `Unit` ならオブジェクト自身を変更している
 
 ---
 
-## 配列同士の==
+## 配列同士の `==`
 
 ```scala
 scala> val x = Array(1, 2, 3)
@@ -116,9 +116,9 @@ y: Array[Int] = Array(1, 2, 3)
 
 scala> x == y
 res2: Boolean = false
-````
+```
 
-* 配列はJVMの配列が使われるため、参照が一致しているかが比較される
+* JVMの配列が使われるため、参照が一致しているかが比較される
 * 解決策（１）： ListやVectorなどのScalaのコレクションに変換する
 * 解決策（２）： Arrays.deepEqualsを使う
 
@@ -131,11 +131,14 @@ res6: Boolean = true
 
 ## 誤った `Future` の使い方
 
-* 以下のプログラムでは、 `a` 、`b` 、 `c` に対応する処理が並行に実行されない
+* `a` 、`b` 、 `c` に対応する処理が並行に実行されない
 
 ```scala
-val d = for(a ← Future(someCompuationA()); b ← Future(someCompuationB()))
-  yield a + b
+val d = for {
+  a <- Future(someCompuationA())
+  b <- Future(someCompuationB())
+  c <- Future(someCompuationC())
+} yield a + b + c
 ```
 
 * 解決策：先に `Future` のインスタンスを格納する変数を用意する
@@ -143,7 +146,12 @@ val d = for(a ← Future(someCompuationA()); b ← Future(someCompuationB()))
 ```scala
 val a1 = Future(someCompuationA()) // someCompuationA()が非同期に実行開始される
 val b1 = Future(someCompuationB()) // someCompuationB()が非同期に実行開始される
-val d = for(a ← a1; b ← b1) yield a + b
+val c1 = Future(someCompuationC()) // someCompuationC()が非同期に実行開始される
+val d = for {
+  a <- a1
+  b <- b1
+  c <- c1
+} yield a + b + c
 ```
 
 ---
@@ -159,13 +167,16 @@ header match {
 }
 ```
 
-* 大文字に置き換える、あるいはバッククオートで囲む
+* 大文字に置き換える
+* バッククオートで囲む
 
 ```scala
 val ClassFileHeader = 0xCAFEBABE
+val classFileHeader = 0xCAFEBABE
 val header = 0XFFFFFFFF
 header match {
-  case ClassFileHeader => "success" 
+  case ClassFileHeader => "success1" 
+  case `classFileHeader` => "success2"
   case _ => "error" // => こちらが選ばれる
 }
 ```
@@ -182,18 +193,28 @@ val Digits = "([0-9]+)".r
 }
 "abc123d" match {
   case Digits(n) => n
-  case _ => 0 // => 0
+  case _ => 0 // => 0 // => 0
 }
 ```
 
-* 正規表現をmatch式で使った場合、完全一致であることを覚えておく
+* 正規表現を `match` 式で使った場合、完全一致
+* なお、正規表現が特別に `match` 式を使えるわけではない
+  * `unapply`
+  * `unapplySeq`
 
 ---
 
 ## 既存の型同士のimplicit conversionは使わない
 
+* 当たり前
+
 ```scala
 implicit def int2boolean(n: Int): Boolean = n != 0 // 悪い例
+var i = 10
+while(i) { // i == 0 になるとループが終了
+  println(i)
+  i -= 1
+}
 ```
 
 ---
@@ -222,39 +243,39 @@ val f = foo() { bar() }
 ## Javaのメソッドの返り値に注意
 
 ```scala
-val m = new java.util.Map[String, Int]
+val m = new java.util.HashMap[String, Int]
 m.put("foo", "bar")
 m.get("baz") + 1 // => NullPointerException
 ```
 
-* 解決策；Optionで包む
+* 解決策： `Option` で包む
 
 ```
-val m = new java.util.Map[String, Int]
+val m = new java.util.HashMap[String, Int]
 m.put("foo, "bar")
 Option(m.get("baz")) + 1 // => コンパイルエラー
 ```
 
 ---
 
-## Set#mapの罠
+## `Set#map` の罠
 
 ```scala
 val a = Set(1, 2, 3, 4, 5)
-val b = a.map(_ => 2) // => 他の要素が消えて Set(1)
+val b = a.map(_ => 2) // => 他の要素が消えて Set(2) になる
 ```
 
-* Scalaのコレクションは可能な限り自身と同じ型を返そうとするため
-* 解決策：`toList`などで他のコレクションに変換する
+* Scalaのコレクションは可能な限り自身と同じ型を返そうとする
+* 解決策： `toList` 、 `toSeq` などで他のコレクションに変換する
 
 ```scala
 val a = Set(1, 2, 3, 4, 5)
-val b = a.toList.map(_ => 2) // => List(1, 1, 1, 1, 1)
+val b = a.toList.map(_ => 2) // => List(2, 2, 2, 2, 2)
 ```
 
 ---
 
-## for式はシンタックスシュガー（１）
+## `for` 式はシンタックスシュガー（１）
 
 ```scala
 for(x <- 1 to 10) println(i)
@@ -270,7 +291,7 @@ for(x <- 1 to 10) println(i)
 
 ---
 
-## for式はシンタックスシュガー（２）
+## `for` 式はシンタックスシュガー（２）
 
 ```scala
 for(x <- 1 to 10) yield x * 2
@@ -282,11 +303,11 @@ for(x <- 1 to 10) yield x * 2
 (1 to 10).map(x => x * 2)
 ```
 
-のシンタックスシュガー
+と同じ
 
 ---
 
-## for式はシンタックスシュガー（３）
+## `for` 式はシンタックスシュガー（３）
 
 ```scala
 for(x <- 1 to 10; y <- 1 to 10) yield x * y
@@ -298,16 +319,16 @@ for(x <- 1 to 10; y <- 1 to 10) yield x * y
 (1 to 10).flatMap(x => (1 to 10).map(y => x * y))
 ```
 
-のシンタックスシュガー
+と同じ
 
 ---
 
-## for式はシンタックスシュガー（まとめ）
+## `for` 式はシンタックスシュガー（まとめ）
 
-* for式は`foreach` 、 `map` 、 `flatMap` などに展開される
+* `for` 式は `foreach` 、 `map` 、 `flatMap` などに展開される
 * コレクションやシーケンス以外のデータ型にも使える
-  * Option
-  * Either (from Scala 2.12)
+  * `Option`
+  * `Either` (from Scala 2.12)
 
 ---
 
@@ -327,7 +348,9 @@ val i: Outer#Inner = outer.I
 ```
 
 * `Outer#Inner` のように、 `#` を使う必要がある
-* `Outer.Inner` と書いた場合、 `Outer` というオブジェクトに所属する `Inner` という型と解釈される
+* `Outer.Inner` と書いた場合：
+  * `Outer` というオブジェクトに所属する `Inner` という型
+* 遭遇する機会はあまりない
 
 ---
 
@@ -344,7 +367,7 @@ import java.util._
 ## アンダースコア七変化（２）
 
 ```scala
-import java.util.{List => _}
+import java.util.{List => _, _}
 ```
 
 * 特定のクラスを除外してインポート
@@ -359,7 +382,8 @@ n match {
 }
 ```
 
-* ワイルドカードパターン（必ずマッチするパターン）
+* ワイルドカードパターン
+  * 変数パターンで変数名を使いたくない場合
 
 ---
 
@@ -380,18 +404,21 @@ printf("%d", List(1):_*) // => 1
 ```
 
 * 可変引数にコレクションを分解して渡すときに使う
-  * `_` 単体で意味はなく、 `:_*` の組み合わせで意味を持つ
+  * `_` 単体で意味はない
+  * `_*` の組み合わせで意味を持つ
 
 ---
 
 ## アンダースコア七変化（６）
 
 ```scala
-List(1, 2, 3).reverse _ // => (() => List[Int])
+List(1, 2, 3).reverse _ // => () => List[Int]
 ```
 
 * メソッドの型を関数の型に変換するために使う
   * メソッドの型はファーストクラスの型ではないため
+
+**メソッドの型はファーストクラスの型ではない**
 
 ---
 
@@ -401,10 +428,12 @@ List(1, 2, 3).reverse _ // => (() => List[Int])
 List(1, 2, 3).map(_ * 2) // => List(2, 4, 6)
 ```
 
-* プレースホルダ構文
+* 無名関数のためのプレースホルダ構文
   * 構文解析時に作用するという点で特異
-  * これの仕様はやや難しいので別途質問してください
-* （６）の `_` とは全く関係がありません
+  * これの仕様は難しい
+* （６）の `_` とは **全く関係がありません**
+* [解説記事](http://kmizu.hatenablog.com/entry/2015/12/15/030354)
+  * 他にこの機能の解説記事を見た覚えがない…
 
 ---
 
@@ -412,19 +441,24 @@ List(1, 2, 3).map(_ * 2) // => List(2, 4, 6)
 
 * 全てにマッチする、全て、のような概念（ワイルドカード的なもの）
 * 別のものに置き換えられることを前提としているもの
-  * プレースホルダ構文
+  * 無名関数のためのプレースホルダ構文
 * 名前に意味がないため、名前を付けたくないとき
 * `_` が識別子に使えないことを利用した使い方
-  * `import java.util.{List => _}`
-* たまたま `_` が一部にあるだけで、特に意味がないもの
+  * `import java.util.{List => _, _}`
+* `_` が一部にあるだけで、単体では意味がないもの
   * `:_*`
+* 取り上げ忘れていたもの
+  * 高階多相： 
+    * `class G[C[_]]`
+  * 存在型のシンタックスシュガー： 
+    * `val x: List[_] = new ArrayList[String]`
 
 ---
 
 ## まとめ
 
-* Scalaにも当然ながら落とし穴がある
-* 主として、言語の構文に関するものと標準ライブラリに関するものがある
+* Scalaには当然ながら落とし穴がある
+* 言語の構文に関するものと標準ライブラリに関するものがある
 * 実行時に致命的になる落とし穴はあまりない
   * だいたいコンパイル時にわかるので心配し過ぎる必要はない
 
