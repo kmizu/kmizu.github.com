@@ -611,6 +611,37 @@ println(result)
 ## 今後の課題
 
 * declaration-site varianceをエミュレート可能か
+
+---
+
+## おまけ（１）
+
+* implicit with type member
+
+```scala
+def useFunctor(
+  container: Con { type T = String }
+)(f: String => String)
+(implicit functor: Fnc { type C = Con; type In = String; type Out = String })
+: Con { type T = String } = {
+  functor.map(container)(f)
+}
+```
+
+---
+
+## おまけ（２）
+
+```scala
+implicit val functor = (new Functor.CellFunctor {
+  override type In = String
+  override type Out = String
+})
+val result = useFunctor(cell)(x => x * 3)
+println(result)
+```
+
+* こんなのもちゃんと推論できる！偉い！
  
 </script></section>
 
