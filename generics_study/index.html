@@ -52,8 +52,8 @@
 <div class='slides'>
 <section data-markdown data-separator='^\n---$'><script type='text/template'>
 
-## 抽象型メンバーとジェネリクスのカンケイ
-## in Scala
+## 抽象型メンバーとジェネリクス
+## のカンケイ in Scala
 ## ジェネリクス勉強会
 ## 水島宏太
 
@@ -65,9 +65,8 @@
 - GitHub: [kmizu](https://github.com/kmizu)
 - Love: Nemerle/Rust/Standard ML/Scala/...
   - 要は言語オタク
-- 構文解析おじさん
-  - 色々なものを構文解析するのが好きです
-    - 自然言語を除く
+- 色々なものを構文解析するのが好きです
+  - 自然言語を除く
 - プログラミング言語も作ってます
   - [Onion](https://github.com/onion-lang/onion)
     - こっちは開発停滞中
@@ -80,7 +79,7 @@
 
 ---
 
-# これがジェネリウスとどう関係するか
+# これがジェネリクスとどう関係するか
 
 ---
 
@@ -97,10 +96,10 @@ trait Parsers {
   type Element // <--- コレ
   type Input = Reader[Element] // <--- コレ
 
-  abstract class Parser[T] extends 
-  (Input => ParseResult[T]) {
+  abstract class Parser[T] extends (Input => ParseResult[T]) {
     def apply(in: Input): ParseResult[T]
   }
+}
 ```
 
 ---
@@ -117,7 +116,9 @@ class JsonParser extends Parsers {
 
 ---
 
-# クラスのグループをまとめて一つの型で扱うときに便利
+## こんなときに便利
+
+### クラスのグループを一つの型で扱う
 
 ---
 
@@ -153,7 +154,7 @@ case object Empty extends Cell[Nothing]
 
 ---
 
-## Cellを抽象型メンバーで表現する（１）
+## Cellを抽象型メンバーで表現（１）
 
 ```scala
 abstract class Cell {self =>
@@ -167,7 +168,7 @@ abstract class Cell {self =>
 
 ---
 
-## Cellを抽象型メンバーで表現する（２）
+## Cellを抽象型メンバーで表現（２）
 
 ```scala
 abstract class Cons extends Cell {self =>
@@ -190,19 +191,22 @@ abstract class Empty extends Cell {self =>
 
 ---
 
-## Cellを抽象型メンバーで表現する（３）
+## Cellを抽象型メンバーで表現（３）
 
 ```scala
 val cell: Cell { type T = String} =
       new Cons { type T = String
-        def head = "A"
+        def head = 1
         def tail = new Cons { type T = String
-          def head = "B"
+          def head = 2
           def tail = new Empty { type T = String }
         }
       }
-println(cell) // => "A" :: "B" :: Empty
+println(cell) // => 1 :: 2 :: Empty
 ```
+
+* この `cell` を後の例で使っていく
+  * いちいち定義していたら長ったらしいので
 
 ---
 
@@ -211,7 +215,7 @@ println(cell) // => "A" :: "B" :: Empty
 
 ---
 
-## `Cell` with variance （１）
+## 共変 `Cell` （１）
 
 ```scala
 abstract class VCell {self =>
@@ -226,7 +230,7 @@ abstract class VCell {self =>
 
 ---
 
-## `Cell` with variance （２）
+## 共変 `Cell`（２）
 
 ```scala
 abstract class VCons extends VCell {self =>
@@ -238,18 +242,24 @@ abstract class VCons extends VCell {self =>
 
 class VEmpty extends VCell {self =>
   type T = Nothing
-  def head: self.T = throw new NoSuchMethodException("Empty.head")
-  def tail: VCell { type T = Nothing } = throw new NoSuchMethodException("Empty.tail")
+  def head: self.T = {
+    throw new NoSuchMethodException("Empty.head")
+  }
+  def tail: VCell { type T = Nothing } = { 
+    throw new NoSuchMethodException("Empty.tail")
+  }
 
   override def toString(): String = "Empty"
 }
 ```
 
 * ここでも上限境界を使う
+* 落穂ひろい： `throw 式` の型は `Nothing`
+  * どんな型にも適合する＝どんな型にも代入可能
 
 ---
 
-## `Cell` with variance （３）
+## 共変 `Cell` （３）
 
 ```scala
 val vcell: VCell{ type T <: Any } =
@@ -268,7 +278,7 @@ println(vcell)
 
 ---
 
-## `Function` with variance （１）
+## 反変 `Function` （１）
 
 * contravarianceもエンコードしたい
 * 関数の型は良い例
@@ -283,7 +293,7 @@ trait Function {
 
 ---
 
-## `Function` with variance （２）
+## 反変 `Function` （２）
 
 * 実は簡単
 
@@ -295,7 +305,7 @@ val f: Function { type In >: String; type Out <: String} = new Function {
 }
 ```
 
-* use-site variance（contravariant）に対応
+* use-site variance（contravariance）に対応
 
 ---
 
@@ -315,23 +325,16 @@ trait Function {
 
 ## 高階関数を扱う （２）
 
+* これがインタフェース部
+
 ```scala
-trait Mapper {
-  type A
-  type B
-  def map(list: Cell { type E = A })
-    (fun: Function { type In = A; type Out = B }): List { type E = B } = list match {
-    case x: Cons => 
-      new Cons {
-        type E = B
-        val head = fun.apply(x.head)
-        val tail = map(x.tail)(fun)
-      }
-    case x: Empty =>
-      new Nil {
-        type E = B
-      }
-  }
+trait Mapper {self =>
+  type C <: TC // 後で出てくる
+  type In
+  type Out 
+  def map(target: C { type T = In })
+         (fun: Function { type In = self.In; type Out = self.Out })
+    : C{ type T = Out }
 }
 ```
 
@@ -339,10 +342,36 @@ trait Mapper {
 
 ## 高階関数を扱う （３）
 
+* これが実装部
+
+```scala
+trait CellMapper extends Mapper {self =>
+  override type C = Cell
+  type In
+  type Out
+  def map(list: Cell{ type T = In })
+         (fun: Function { type In = self.In; type Out = self.Out })
+    : Cell { type T = Out } = list match {
+    case x: Cons =>
+      new Cons {
+        type T = Out; val head = fun.apply(x.head); val tail = map(x.tail)(fun)
+      }
+    case x: Empty =>
+      new Empty { type T = Out }
+  }
+}
+```
+
+---
+
+## 高階関数を扱う （４）
+
 ```scala
 trait ForEach {
   type A
-  def foreach(list: Cell { type E = A })(fun: Function { type In = A; type Out = Unit }): Unit = list match {
+  def foreach(list: Cell { type E = A })
+             (fun: Function { type In = A; type Out = Unit })
+    : Unit = list match {
     case x: Cons => 
       fun.apply(x.head)
       foreach(x.tail)(fun)
@@ -357,14 +386,15 @@ trait ForEach {
 ## 高階関数の利用例 （１）
 
 ```scala
-val newList = new Mapper {
+val newCell= new Mapper {
   type A = Int
   type B = Int
-}.map(list)(new Function {
+}.map(cell)(new Function {
   type In = Int
   type Out = Int
   def apply(arg: In): Out = arg + 1
 })
+println(newCell) // 2 :: 3 :: Empty
 ```
 
 ---
@@ -383,7 +413,11 @@ new ForEach {
 
 ---
 
-## 抽象型メンバーで高階多相をエミュレート 
+# **ここからが本番**
+
+---
+
+## 抽象型メンバーで **高階多相** をエミュレート 
 
 * `Functor` をエミュレートすることを考える
 * 典型的な `Functor` の定義
@@ -486,15 +520,16 @@ new Mapper.CellMapper {
 ```scala
 val cell: Cell { type T = String} =
   new Cons { type T = String
-    def head = "A"
+    def head = 1
     def tail = new Cons { type T = String
-      def head = "B"
+      def head = 2
       def tail = new Empty { type T = String }
     }
   }
 ```
 
 * `1 :: 2 :: 3 :: Empty` という `Cell`
+* そろそろ忘れてそうなので再度掲載
 
 ---
 
@@ -571,11 +606,11 @@ override type Con = Cell
 ## `Functor` を使う （３−３）
 
 ```scala
-val result = useFunctor(new Functor.CellFunctor {
+val newCell = useFunctor(new Functor.CellFunctor {
   override type In = String
   override type Out = String
 })(cell)(x => x * 3)
-  println(result)
+  println(newCell)
 }
 ```
 
@@ -587,8 +622,8 @@ val result = useFunctor(new Functor.CellFunctor {
 ## `Functor` を使う （３−４）
 
 ```scala
-println(result)
-// "AAA" :: "BBB" :: Empty
+println(newCell)
+// 3 :: 6 :: Empty
 ```
 
 ---
