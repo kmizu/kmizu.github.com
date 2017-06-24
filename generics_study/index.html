@@ -208,12 +208,12 @@ abstract class Empty extends Cell {self =>
 ## Cellを抽象型メンバーで表現（３）
 
 ```scala
-val cell: Cell { type T = String} =
-      new Cons { type T = String
+val cell: Cell { type T = Int } =
+      new Cons { type T = Int 
         def head = 1
-        def tail = new Cons { type T = String
+        def tail = new Cons { type T = Int
           def head = 2
-          def tail = new Empty { type T = String }
+          def tail = new Empty { type T = Int }
         }
       }
 println(cell) // => 1 :: 2 :: Empty
@@ -532,17 +532,17 @@ new Mapper.CellMapper {
 ## `Functor` を使う （１）
 
 ```scala
-val cell: Cell { type T = String} =
-  new Cons { type T = String
+val cell: Cell { type T = Int } =
+  new Cons { type T = Int 
     def head = 1
-    def tail = new Cons { type T = String
+    def tail = new Cons { type T = Int
       def head = 2
-      def tail = new Empty { type T = String }
+      def tail = new Empty { type T = Int }
     }
   }
 ```
 
-* `1 :: 2 :: 3 :: Empty` という `Cell`
+* `1 :: 2 :: Empty` という `Cell`
 * そろそろ忘れてそうなので再度掲載
 
 ---
@@ -553,18 +553,18 @@ val cell: Cell { type T = String} =
 class FunctorUser {self =>
   type Fnc <: Functor
   type Con <: TC
-  type In = String
-  type Out = String
+  type In = Int 
+  type Out = Int 
   def useFunctor(
-    functor: Fnc { type C = Con; type In = String; type Out = String }
-  )(container: Con { type T = String })(f: String => String): Con { type T = String } = {
+    functor: Fnc { type C = Con; type In = Int; type Out = Int}
+  )(container: Con { type T = Int })(f: Int => Int): Con { type T = Int } = {
     functor.map(container)(f)
   }
 }
 ```
 
 * `Functor` の利用者側を抽象化
-* 面倒なので、 `In` と `Out` は `String` に固定
+* 面倒なので、 `In` と `Out` は `Int` に固定
 * `Fnc` はサブクラスでオーバーライドされて、適切な `Functor` のサブクラスが与えられる
 * `Con` はなんかの型コンストラクタで `T` をメンバに持つ
 
@@ -574,14 +574,14 @@ class FunctorUser {self =>
 
 ```scala
 def useFunctor(
-  functor: Fnc { type C = Con; type In = String; type Out = String }
-)(container: Con { type T = String })(f: String => String): Con { type T = String } = {
+  functor: Fnc { type C = Con; type In = Int; type Out = Int }
+)(container: Con { type T = Int })(f: Int => Int): Con { type T = Int } = {
   functor.map(container)(f)
 }
 ```
 
 * `functor` は、 `Fnc` で、かつ、 `C` は `Con` （まだわからないので）
-* `In` と `Out` は先程書いたように `String` に固定
+* `In` と `Out` は先程書いたように `Int` に固定
 * `container` はとにかく型コンストラクタであれば何でも良い
   * `Con` を使う
 * `f` は普通の関数
@@ -595,8 +595,8 @@ object CellFunctorUser extends FunctorUser{self =>
   override type Fnc = Functor.CellFunctor
   override type Con = Cell
   val result = useFunctor(new Functor.CellFunctor {
-    override type In = String
-    override type Out = String
+    override type In = Int 
+    override type Out = Int
   })(cell)(x => x * 3)
 }
 ```
@@ -621,8 +621,8 @@ override type Con = Cell
 
 ```scala
 val newCell = useFunctor(new Functor.CellFunctor {
-  override type In = String
-  override type Out = String
+  override type In = Int 
+  override type Out = Int
 })(cell)(x => x * 3)
   println(newCell)
 }
@@ -669,10 +669,10 @@ println(newCell)
 
 ```scala
 def useFunctor(
-  container: Con { type T = String }
-)(f: String => String)
-(implicit functor: Fnc { type C = Con; type In = String; type Out = String })
-: Con { type T = String } = {
+  container: Con { type T = Int }
+)(f: Int => Int)
+(implicit functor: Fnc { type C = Con; type In = Int; type Out = Int})
+: Con { type T = Int} = {
   functor.map(container)(f)
 }
 ```
@@ -683,8 +683,8 @@ def useFunctor(
 
 ```scala
 implicit val functor = (new Functor.CellFunctor {
-  override type In = String
-  override type Out = String
+  override type In = Int
+  override type Out = Int
 })
 val result = useFunctor(cell)(x => x * 3)
 println(result)
@@ -701,9 +701,7 @@ println(result)
 
       </div>
 		</div>
-    
-
-		<script src="lib/js/head.min.js"></script>
+    <script src="lib/js/head.min.js"></script>
 		<script src="js/reveal.js"></script>
 
 		<script>
