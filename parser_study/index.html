@@ -269,6 +269,7 @@ public int digit() {
   - `$ mvn compile`
 3. 構文解析器のファイルを作成
   - `MyDigitParser.java`
+  - `com.github.kmizu.parser_hands_on.digit.AbstractDigitParser` を継承
 4. 自分の構文解析器をテストするように書き換える
   - `src/test/java` 下にある `MyDigitParserTest.java`
 5. テストを実行
@@ -324,6 +325,7 @@ int integer() {
 
 1. 構文解析器のファイルを作成
   - `MyIntegerParser.java`
+  - `com.github.kmizu.parser_hands_on.integer.AbstractIntegerParser` を継承
 4. 自分の構文解析器をテストするように書き換える
   - `src/test/java` 下にある `MyIntegerParserTest.java`
 5. テストを実行
@@ -375,6 +377,8 @@ LimitedExpressionNode expression() {
 
 1. 構文解析器のファイルを作成
   - `MyLimitedExpressionParser.java`
+  - `com.github.kmizu.parser_hands_on.limited_expression.AbstractLimitedExpressionParser`
+    を継承
 4. 自分の構文解析器をテストするように書き換える
   - `src/test/java` 下にある `MyLimitedExpressionParserTest.java`
 5. テストを実行
@@ -446,6 +450,7 @@ primary = '(' expression ')' | character;
 
 1. 構文解析器のファイルを作成
   - `MyRegularExpressionParser.java`
+  - `com.github.kmizu.parser_hands_on.regular_expression.AbstractRegularExpressionParser`
 4. 自分の構文解析器をテストするように書き換える
   - `src/test/java` 下にある `MyRegularExpressionParserTest.java`
 5. テストを実行
@@ -490,6 +495,7 @@ jnumber = integer;
 
 1. 構文解析器のファイルを作成
   - `MyJSONParser.java`
+  - `com.github.kmizu.parser_hands_on.json.AbstractJSONParser` を継承
 4. 自分の構文解析器をテストするように書き換える
   - `src/test/java` 下にある `MyJSONParserTest.java`
 5. テストを実行
