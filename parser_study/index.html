@@ -512,9 +512,9 @@ primary = '(' expression ')' | character;
 jvalue = jobject | jarray | jboolean |
        | jnull | jstring | jnumber;
 jobject = '{' 
-  jstring ':' jvalue {',' jstring ':' jvalue}
+  [jstring ':' jvalue {',' jstring ':' jvalue}]
 '}';
-jarray = '[' jvalue {',' jvalue} ']';
+jarray = '[' [jvalue {',' jvalue}] ']';
 jboolean = 'true' | 'false';
 jnull = 'null';
 jstring = '"' ... '"';
