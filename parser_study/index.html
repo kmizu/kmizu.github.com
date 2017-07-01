@@ -229,13 +229,14 @@ private AST statement() {
     return whileStatement();
   } catch (ParseFailure e1) {
     restore();
-    try {
-      save();
-      return forStatement();
-    } catch (ParseFailure e2) {
-      restore();
-      return tryStatement;
-    }
+  }
+
+  try {
+    save();
+    return forStatement();
+  } catch (ParseFailure e2) {
+    restore();
+    return tryStatement();
   }
 }
 ```
