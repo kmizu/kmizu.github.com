@@ -426,7 +426,8 @@ LimitedExpressionNode expression() {
 ## 算術式のBNF
 
 ```
-expression = multitive 
+expression = additive;
+additive = multitive 
            {'+' multitive | '-' multitive};
 multitive = primary
            {'*' primary | '/' primary};
