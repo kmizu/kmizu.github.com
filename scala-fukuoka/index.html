@@ -115,7 +115,9 @@
 
 ---
 
-## IEEE Spectrum(Web系言語）でX位
+## IEEE Spectrum The Top Programming Languages 2017
+
+[![](IEEESpectrum2017.png)](http://spectrum.ieee.org/static/interactive-the-top-programming-languages-2017)
 
 ---
 
@@ -195,6 +197,48 @@ while(i < 100) {
 ```
 
 （Scala）の生成コードとほとんど同じ
+
+---
+
+## Java版のバイトコード
+
+```
+public static void main(java.lang.String[]);
+  Code:
+     0: iconst_0
+     1: istore_1
+     2: iload_1
+     3: bipush        100
+     5: if_icmpge     18
+     8: iload_1
+     9: invokestatic  #2
+    12: iinc          1, 1
+    15: goto          2
+    18: return
+```
+
+---
+
+## Scala版のバイトコード
+
+```
+public void main(java.lang.String[]);
+  Code:
+     0: iconst_0
+     1: istore_2
+     2: iload_2
+     3: bipush        100
+     5: if_icmpgt     20
+     8: aload_0
+     9: iload_2
+    10: invokevirtual #22
+    13: iload_2
+    14: iconst_1
+    15: iadd
+    16: istore_2
+    17: goto          2
+    20: return
+```
 
 ---
 
