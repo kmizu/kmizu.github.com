@@ -243,15 +243,15 @@ public void main(java.lang.String[]);
 ---
 
 ### Q. Scalaのコンパイルは（とても）遅い？
-### A. はい。ただし、工夫により和らげられます
+### A. はい。ただし、和らげることができます
 
 * 金の弾丸
   * Core i7クラスがあればだいぶ快適に
 * sbtを立ち上げっぱなしにする
-  * JITコンパイルの結果が破棄されないため
-* (IntelliJ IDEAを利用の場合)
-  * sbt shellを使う
-    * sbt 0.13.15以降で利用可能
+* IntelliJ IDEAを利用の場合：
+  * sbt shellを使う(sbt 0.13.15以降)
+* Scala 2.12.3にバージョンを上げる
+  * 20%〜30%のコンパイル時間削減！
 * 参考：
   http://qiita.com/kmizu/items/234a9e5ba91ee182a925
 
