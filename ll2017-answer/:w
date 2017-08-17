@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="ja">
+
+	<head>
+		<meta charset="utf-8">
+
+    <title>はじめに</title>
+
+		<meta name="description" content="回答編 in Scala">
+		<meta name="author" content="水島宏太">
+
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/black.css" id="theme">
+<style type='text/css'>     
+  .reveal h1,               
+  .reveal h2,               
+  .reveal h3,               
+  .reveal h4,               
+  .reveal h5,               
+  .reveal h6 {              
+    text-transform: none;   
+  }                         
+</style>                    
+
+		<!-- Code syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+<div class='slides'>
+<section data-markdown data-separator='^\n---$'><script type='text/template'>
+
+## 回答編 in Scala
+## 株式会社ドワンゴ　水島宏太
+
+---
+
+### おさらい（BNF）
+
+```
+expression ::= additive
+
+additive ::= multitive 
+             ('+' multitive | '-' multitive)*
+
+multitive ::= primary
+             ('*' primary | '/' primary)*
+
+primary ::= '(' expression ')' | number
+
+number ::= '0'|[1-9][0-9]*
+```
+
+---
+
+### 回答（計算しない場合）
+
+- 10行程度
+
+```scala
+def expression: Parser[Any] = additive
+
+def additive: Parser[Any] = P((multitive ~
+  ($("+") ~ multitive | $("-") ~ multitive).*)
+)
+
+def multitive: Parser[Any] = P((primary ~
+  ($("*") ~ primary | $("/") ~ primary).*)
+)
+
+def primary: Parser[Any] = P(
+  ($("(") ~> expression <~ $(")")) | number
+)
+
+def number: Parser[Any] = oneOf('0'to'9')
+```
+
+---
+
+### 回答（計算する場合）（１）：
+
+```scala
+def expression: Parser[Int] = additive
+
+def additive: Parser[Int] = P((multitive ~
+  ($("+") ~ multitive | $("-") ~ multitive).*).map {
+  case (l, rs) => rs.foldLeft(l) { 
+    case (e, ("+", r)) => e + r; case (e, ("-", r)) => e - r 
+  }
+})
+```
+
+---
+
+### 回答（計算する場合）（２）：
+
+```scala
+def multitive: Parser[Int] = P((primary ~
+  ($("*") ~ primary | $("/") ~ primary).*).map {
+    case (l, rs) => rs.foldLeft(l) { 
+      case (e, ("*", r)) => e * r
+      case (e, ("/", r)) => e / r 
+    }
+  }
+)
+```
+
+---
+
+### 回答（計算する場合）（３）：
+
+```scala
+def primary: Parser[Int] = P(
+  ($("(") ~> expression <~ $(")")) | number
+)
+
+def number: Parser[Int] = oneOf('0'to'9').*.map {
+  digits => digits.mkString.toInt
+}
+```
+
+---
+
+### テスト
+
+```scala
+assert(3 == calculate("1+2"))
+assert(-1 == calculate("1-2"))
+assert(2 == calculate("1*2"))
+assert(0 == calculate("1/2"))
+assert(2 == calculate("1+2*3/4"))
+assert(2 == calculate("(1+2)*3/4"))
+assert(0 == calculate("(1+2)*(3/4)"))
+```
+
+---
+
+### 解説（１）：
+
+* 解析結果は `Option` 型
+* `Parser` は関数
+  * 文字列を引数にとって、 `Option` を返す
+
+```scala
+object Parsers {
+  type Result[+A] = Option[(A, String)]
+  type Parser[+A] = String => Result[A]
+}
+```
+
+---
+
+### 解説（１）：基本的なパーザ
+
+```scala
+def oneOf(seq: Seq[Char]): Parser[String] = {input =>
+  if(input.length == 0 || !seq.exists(_ == input.charAt(0))) None
+  else Some(input.substring(0, 1) -> input.substring(1))
+}
+
+def $(literal: String): Parser[String] = {input =>
+  if(input.startsWith(literal)) {
+    Some(literal -> input.substring(literal.length)) 
+  else None
+}
+
+def P[A](parser: => Parser[A]): Parser[A] = {input => 
+  parser(input)
+}
+```
+
+---
+
+### 解説（２）：連接
+
+```scala
+def ~[U](right: Parser[U]): Parser[(T, U)] = {input =>
+  self(input) match {
+    case Some((value1, next1)) =>
+      right(next1) match {
+        case Some((value2, next2)) =>
+          Some((value1, value2), next2)
+        case None => None
+      }
+    case None => None
+  }
+}
+```
+
+</script></section>
+
+      </div>
+		</div>
+    
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+
+		<script>
+
+			// Full list of configuration options available at:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				transition: 'slide', // none/fade/slide/convex/concave/zoom
+
+				// Optional reveal.js plugins
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true },
+					{ src: 'plugin/notes/notes.js', async: true }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>
