@@ -4,9 +4,9 @@
 	<head>
 		<meta charset="utf-8">
 
-    <title>はじめに</title>
+    <title>どう解く？ in Scala</title>
 
-		<meta name="description" content="回答編 in Scala">
+		<meta name="description" content="どう解く？ in Scala">
 		<meta name="author" content="水島宏太">
 
 		<meta name="apple-mobile-web-app-capable" content="yes">
@@ -52,7 +52,7 @@
 <div class='slides'>
 <section data-markdown data-separator='^\n---$'><script type='text/template'>
 
-## 回答編 in Scala
+## どう解く？ in Scala
 ## 株式会社ドワンゴ　水島宏太
 
 ---
@@ -62,11 +62,9 @@
 ```
 expression ::= additive
 
-additive ::= multitive 
-             ('+' multitive | '-' multitive)*
+additive ::= multitive ('+' multitive | '-' multitive)*
 
-multitive ::= primary
-             ('*' primary | '/' primary)*
+multitive ::= primary ('*' primary | '/' primary)*
 
 primary ::= '(' expression ')' | number
 
@@ -82,12 +80,12 @@ number ::= '0'|[1-9][0-9]*
 ```scala
 def expression: Parser[Any] = additive
 
-def additive: Parser[Any] = P((multitive ~
-  ($("+") ~ multitive | $("-") ~ multitive).*)
+def additive: Parser[Any] = P(
+  (multitive ~ ($("+") ~ multitive | $("-") ~ multitive).*)
 )
 
-def multitive: Parser[Any] = P((primary ~
-  ($("*") ~ primary | $("/") ~ primary).*)
+def multitive: Parser[Any] = P(
+  (primary ~ ($("*") ~ primary | $("/") ~ primary).*)
 )
 
 def primary: Parser[Any] = P(
@@ -96,6 +94,8 @@ def primary: Parser[Any] = P(
 
 def number: Parser[Any] = oneOf('0'to'9')
 ```
+
+* BNFの構造をそのまま反映している
 
 ---
 
@@ -112,6 +112,13 @@ def additive: Parser[Int] = P((multitive ~
 })
 ```
 
+* `a ~ b` : 連接。 `a` に続いて `b` でパーズ
+  * パーズ結果のペアを返す
+* `a | b` : 選択。 `a` でパーズ。失敗したら `b` でパーズ
+* `e.*` : 繰り返し。失敗するまで、 `e` でパーズ
+  * パーズ結果の `List` を返す
+* `foldLeft` で右辺の結果を畳み込む
+
 ---
 
 ### 回答（計算する場合）（２）：
@@ -127,6 +134,8 @@ def multitive: Parser[Int] = P((primary ~
 )
 ```
 
+* `foldLeft` で右辺の結果を畳み込む
+
 ---
 
 ### 回答（計算する場合）（３）：
@@ -140,6 +149,13 @@ def number: Parser[Int] = oneOf('0'to'9').*.map {
   digits => digits.mkString.toInt
 }
 ```
+
+* `a ~> e <~ b` について
+  * `<~` : `~` と同じだが、右の結果を捨てる
+  * `~>` : `~` と同じだが、左の結果を捨てる
+  *  `e` の結果だけを取り出せる
+* `oneOf` : Unicodeの範囲に含まれるか
+
 
 ---
 
@@ -159,9 +175,11 @@ assert(0 == calculate("(1+2)*(3/4)"))
 
 ### 解説（１）：
 
-* 解析結果は `Option` 型
-* `Parser` は関数
-  * 文字列を引数にとって、 `Option` を返す
+* 解析結果は `Option[A]` 型
+  * `Some[A]` か `None`
+* `Parser[T]` は関数
+  * 引数は文字列（ `String` ）
+  * `Option[(T, String)]` を返す
 
 ```scala
 object Parsers {
@@ -243,17 +261,49 @@ def * : Parser[List[T]] = {input =>
 
 ---
 
-### 強調したい点
+### 解説（４）： `map`
 
-* 使う側はBNFと同じように記述できた
+```scala
+def map[U](function: T => U): Parser[U] = {input =>
+  self(input) match {
+    case Some((value, next)) => 
+      Some(function(value) -> next)
+    case None => None
+  }
+}
+```
+
+* 結果が `Some` なら `function` を結果に適用
+  * 結果を加工したいときに使う
+
+---
+
+### 解説（５）： `~>` と `<~`
+
+```scala
+def ~>[U](that: Parser[U]): Parser[U] = {
+  (self ~ that).map { case (l, r) => r }
+}
+
+def <~[U](that: Parser[U]): Parser[T] = {
+  (self ~ that).map { case (l, r) => l }
+}
+```
+
+* `~` と `map` の組み合わせ
+
+---
+
+### まとめ
+
+* 利用側はBNFと同様に記述できた
   * 10行程度
 * 作る側も簡潔に記述できた
   * 60行程度
 * 第一級関数やパターンマッチの恩恵
 * パーザを関数とみなす事の恩恵
-  * パーザは副作用を持たない
-* パーザが自由に合成できる部品となった
-  * パーザが副作用を持つと難しい
+  * パーザが自由に合成できる部品となった
+  * `~>` と`<~`
 
 </script></section>
 
