@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="ja">
+
+	<head>
+		<meta charset="utf-8">
+
+    <title>プレースホルダ構文完全解説</title>
+
+		<meta name="description" content="プレースホルダ構文完全解説">
+		<meta name="author" content="水島宏太">
+
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/black.css" id="theme">
+<style type='text/css'>     
+  .reveal h1,               
+  .reveal h2,               
+  .reveal h3,               
+  .reveal h4,               
+  .reveal h5,               
+  .reveal h6 {              
+    text-transform: none;   
+  }                         
+</style>                    
+
+		<!-- Code syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+<div class='slides'>
+<section data-markdown data-separator='^\n---$'><script type='text/template'>
+
+## Scala関西Summit 2017
+### 株式会社ドワンゴ　水島宏太
+
+---
+
+## 自己紹介
+
+- Twitter: [@kmizu](https://twitter.com/kmizu)
+- GitHub: [kmizu](https://github.com/kmizu)
+- 言語オタク
+  - 自分のプログラミング言語も作ってます
+    - [Klassic](https://github.com/klassic/klassic)
+- Japan Scala Association代表理事
+- 株式会社エフ・コード技術顧問
+
+---
+
+## 発表の趣旨
+
+- プレースホルダ構文の細かい部分を解説
+- Placeholder Syntax for Anonymous Functions
+  - Scala Language Specification 6.23.1
+  - この発表ではプレースホルダ構文と呼ぶ
+  - 無名関数を手軽に作るための構文糖
+
+---
+
+## プレースホルダ構文（基本編）（1）
+
+```scala
+list.map(_.size)
+```
+
+is translated to
+
+```scala
+list.map(x => x.size)
+```
+
+---
+
+## プレースホルダ構文（基本編）（２）
+
+```scala
+list.foldLeft(0)(_ + _)
+```
+
+is translated to
+
+```scala
+list.foldLeft(0)((a, b) => a + b)
+```
+
+---
+
+## 勘違いされやすい部分
+
+```scala
+obj.method _
+```
+
+（Eta Expansionのための構文）と
+
+```scala
+ob.method(_)
+```
+
+（プレースホルダ構文）は別物
+
+---
+
+## プレースホルダ構文の難しさ
+
+- 構文解析時に作用する
+
+```scala
+list.foldLeft(0)(_ + _)
+```
+
+と
+
+```scala
+list.foldLeft(0)(_.+(_))
+```
+
+は違う
+
+---
+
+## プレースホルダ構文の仕様
+
+- SLS 6.23.1で規定
+  - 言語仕様読めば一応わかる
+- 結構難解
+  - 正確な解説を提供したい
+- 普段は知らなくてもいい
+  - 間違った使い方はコンパイルエラーに
+
+---
+
+## From SLS 6.23.1
+
+```
+構文カテゴリExprの式中に、識別子が有効な箇所に_（アンダースコア）
+を埋め込むことができる。そのような式は無名関数を表現する。２回以上
+出現いた場合は、複数の引数を表現する。
+```
+
+---
+
+## 構文カテゴリ
+
+- SLSのBNF表記における左辺
+
+```
+Expr ::=  (Bindings | id | `_") `=>" Expr
+       |  Expr1
+```
+
+- は、構文カテゴリ `Expr` を定義する
+
+---
+
+## 構文カテゴリにおける「還元」
+
+- 仕様書にはない用語
+  - でも、解釈に必要（だと思う）
+- LRパーザにおける「還元」に近い意味
+
+```
+Expr ::=  (Bindings | id | `_") `=>" Expr
+       |  Expr1
+```
+
+- 構文カテゴリ `Expr1` の式が `Expr` に還元可能
+
+---
+
+</script></section>
+
+      </div>
+		</div>
+    
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+
+		<script>
+
+			// Full list of configuration options available at:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				transition: 'slide', // none/fade/slide/convex/concave/zoom
+
+				// Optional reveal.js plugins
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true },
+					{ src: 'plugin/notes/notes.js', async: true }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>
