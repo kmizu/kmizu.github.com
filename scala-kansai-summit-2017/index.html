@@ -397,7 +397,7 @@ list.foldLeft(0){(x, y) => add(add(x, y))}
 
 ---
 
-## 構文カテゴリ再訪（１）
+## カテゴリ再訪（１）
 
 ```
 Expr         ::=  (Bindings | id | `_') `=>' Expr // 無名関数
@@ -426,6 +426,7 @@ SimpleExpr   ::=  ...
 SimpleExpr1  ::=  ...
                |  SimpleExpr `.' id // メンバの参照
                |  SimpleExpr1 ArgumentExprs // 関数呼び出し
+ArgumentExprs ::= '(' Expr ... ')'
 ```
 
 ---
@@ -441,6 +442,113 @@ SimpleExpr1  ::=  ...
 - ...
 - `Expr` に還元可能なもの
   - 無名関数または `Expr1`
+
+---
+
+## 考察（１）
+
+```scala
+list.map(_.size)
+```
+
+- `_.size` は `SimpleExpr1`
+  - `SimpleExpr1 ==> SimpleExpr`
+  - `SimpleExpr` ==> PrefixExpr`
+  - `PrefixExpr` ==> `InfixExpr`
+  - `...`
+  - `Expr1` ==> `Expr`
+- メソッド呼び出しの引数は `Expr`
+
+---
+
+## 考察（２）
+
+```scala
+list.foldLeft(0)(_ + _)
+```
+
+- `_ + _` は `InfixExpr`
+  - `InfixExpr ==> PostfixExpr` 
+  - `PostfixExpr ==> Expr1`
+  - `Expr1 ==> Expr`
+- メソッド呼び出しの引数は `Expr`
+
+---
+
+## 考察（３）
+
+```scala
+list.map(_)
+```
+
+- `list.map{x => x}` はありえない
+- `list.map(_)` が起点
+  - `SimpleExpr ==> PrefixExpr`
+  - `...`
+  - `Expr1 ==> Expr`
+
+---
+
+## 考察（４）
+
+```scala
+list.map(((1).+(_)).+(3))
+```
+
+- `(x1) => list.map((1).+(x) + 3)` はありえない
+  - `((1).+(_)).+(3)` を `e` とする 
+    - `e` は `Expr`
+  - `e` は `e' = (1).+(_)` を真に含む
+  - メソッド呼び出しは `SimpleExpr`
+
+---
+
+## 考察（５）
+
+```scala
+list.foldLeft(0)(_ + _ + 1)
+```
+
+- `_ + _` は `InfixExpr`
+- `_ + _ + 1` も `InfixExpr`
+  - `InfixExpr ==> PostfixExpr`
+  - `PostfixExpr ==> Expr1`
+  - `Expr1 ==> Expr`
+- メソッド呼び出しの引数は `Expr`
+
+---
+
+## 考察（６）
+
+```scala
+def add(x: Int, y: Int) = x + y
+list.foldLeft(0)(add(1, add(_, _)))
+```
+
+- `add(_, _)` はメソッド呼び出しの引数
+  - `Expr` になる
+  - したがって、 `(x, y) => add(x, y)`
+
+---
+
+## どう使うべきか
+
+- メソッド呼び出しのオペランドにおいて
+  - レシーバの位置に置く
+  - 中置式のオペランドの位置に置く
+  - メソッド呼び出しの引数の位置に置く
+- ネストした式の中では使わない
+  - よくわからない展開結果が導出される
+
+---
+
+## まとめ
+
+- プレースホルダ構文の詳細について解説
+  - 構文解析時に作用
+- 単純な式の中で使うことを推奨
+- 恐れる必要はない
+  - コンパイルエラーになる
 
 </script></section>
 
