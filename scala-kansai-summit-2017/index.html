@@ -69,27 +69,154 @@
 
 ---
 
-## 発表の趣旨
+## プレースホルダ構文
 
-- プレースホルダ構文の細かい部分を解説
 - Placeholder Syntax for Anonymous Functions
-  - Scala Language Specification 6.23.1
   - この発表ではプレースホルダ構文と呼ぶ
-  - 無名関数を手軽に作るための構文糖
+- Defined at Scala Language Specification 6.23.1
+- 無名関数を手軽に作るための構文糖
 
 ---
 
-## プレースホルダ構文（基本編）（1）
+## クイズ（１）
+
+- 以下のコードの展開形を答えよ
 
 ```scala
 list.map(_.size)
 ```
 
-is translated to
+---
+
+## 回答（１）
+
+```scala
+list.map{x => x.size}
+```
+
+---
+
+## クイズ（２）
+
+- 以下のコードの展開形を答えよ
+
+```scala
+list.foldLeft(0)(_ + _)
+```
+
+---
+
+## 回答（２）
+
+```scala
+list.foldLeft(0){(x, y) => x + y}
+```
+
+---
+
+## クイズ（３）
+
+- 以下のコードの展開形を答えよ
+
+```scala
+list.map(_)
+```
+
+---
+
+## 回答（３）
+
+```scala
+(x) => list.map(x)
+```
+
+---
+
+## クイズ（４）
+
+- 以下のコードの展開形を答えよ
+
+```scala
+list.map(((1).+(_)).+(3))
+```
+
+---
+
+## 回答（４）
+
+```scala
+list.map{((x) => (1 + x)) + 3}
+```
+
+- コンパイルエラー
+  - 構文解析エラーではない
+- 純粋に「構文のみ」で決まる
+
+---
+
+## クイズ（５）
+
+-- 以下のコードの展開形を答えよ
+
+```scala
+list.foldLeft(0)(_ + _ + 1)
+```
+
+---
+
+## 回答（５）
+
+```scala
+list.foldLeft(0){(x, y) => x + y + 1)
+```
+
+- コンパイルエラーにならない
+- （４）と同じはずなのに！
+
+---
+
+## クイズ（６）
+
+- 以下のコードの展開形を答えよ
+
+```scala
+def add(x: Int, y: Int) = x + y
+list.foldLeft(0)(add(1, add(_, _)))
+```
+
+---
+
+## 回答（６）
+
+```scala
+def add(x: Int, y: Int) = x + y
+list.foldLeft(0)(add(1, (x, y) => add(x, y)))
+```
+
+- コンパイルエラー
+
+---
+
+## 今回の発表の趣旨
+
+- 何故こういう展開形になるのかを探る
+- なるべく正確な解釈を導く
+
+---
+
+## プレースホルダ構文（基本編）（１）
+
+```scala
+list.map(_.size)
+```
+
+は
 
 ```scala
 list.map(x => x.size)
 ```
+
+に展開される
 
 ---
 
@@ -99,27 +226,32 @@ list.map(x => x.size)
 list.foldLeft(0)(_ + _)
 ```
 
-is translated to
+は
 
 ```scala
 list.foldLeft(0)((a, b) => a + b)
 ```
 
+に展開される
+
 ---
 
-## 勘違いされやすい部分
+## 勘違いされやすい点
 
 ```scala
 obj.method _
 ```
 
-（Eta Expansionのための構文）と
+Eta Expansionのための構文と
 
 ```scala
 ob.method(_)
 ```
 
-（プレースホルダ構文）は別物
+プレースホルダ構文は別物
+
+- 前者は型チェック時に発動
+- 後者は構文解析時に発動
 
 ---
 
@@ -128,16 +260,16 @@ ob.method(_)
 - 構文解析時に作用する
 
 ```scala
-list.foldLeft(0)(_ + _)
+list.foldLeft(0)(_ + _ + 2)
 ```
 
 と
 
 ```scala
-list.foldLeft(0)(_.+(_))
+list.foldLeft(0)((_.+(_)).+(2))
 ```
 
-は違う
+が違う
 
 ---
 
@@ -146,13 +278,12 @@ list.foldLeft(0)(_.+(_))
 - SLS 6.23.1で規定
   - 言語仕様読めば一応わかる
 - 結構難解
-  - 正確な解説を提供したい
 - 普段は知らなくてもいい
-  - 間違った使い方はコンパイルエラーに
+  - 間違った使い方はコンパイルエラーになる
 
 ---
 
-## From SLS 6.23.1
+## From SLS 6.23.1（１）
 
 ```
 構文カテゴリExprの式中に、識別子が有効な箇所に_（アンダースコア）
@@ -178,7 +309,7 @@ Expr ::=  (Bindings | id | `_") `=>" Expr
 ## 構文カテゴリにおける「還元」
 
 - 仕様書にはない用語
-  - でも、解釈に必要（だと思う）
+  - 解釈に必要（だと思う）
 - LRパーザにおける「還元」に近い意味
 
 ```
@@ -186,9 +317,130 @@ Expr ::=  (Bindings | id | `_") `=>" Expr
        |  Expr1
 ```
 
-- 構文カテゴリ `Expr1` の式が `Expr` に還元可能
+- 構文カテゴリ `Expr1` の式を `Expr` に還元可能
 
 ---
+
+## アンダースコア節
+
+- `_:T`
+  - `T` は型
+- `_`
+
+---
+
+## From SLS 6.23.1（２）
+
+- 次の二つの条件が満たされたとき、式 `e` はアンダースコア節 `u`
+  を束縛する
+
+- (1) `e` は `u` を**真に** 含む
+- (2) `Expr` であるような他の式 `x` が存在しない
+  - `e` が `x` を真に含む
+  - `x` が `u` を真に含む
+
+---
+
+## 解説（１）
+
+- `e` は `u` を**真に** 含む
+- 以下の解釈はない
+
+```scala
+list.map(_) ==> 
+list.map{x => x}
+```
+   
+- `e` が `u` を**真に** 含まない
+- 以下はOK
+
+```scala
+list.map(_.size) ==> list.map{x => x.size}
+```
+
+---
+
+## 解説（２）
+
+- `Expr` であるような他の式 `x` が存在しない
+  - `e` が `x` を真に含む
+  - `x` が `u` を真に含む
+- 以下の解釈はない
+
+```scala
+list.foldLeft(0)(add(add(_, _))) ==> 
+list.foldLeft(0){(x, y) => add(add(x, y))}
+```
+
+- 外側の `add()` が内側の `add()` を真に含む
+- 内側の `add()` が二つの `_` を真に含む
+
+---
+
+## From SLS 6.23.1（３）
+
+- 式 `e` が `u1` ... `un` を束縛するとき、以下の式に展開される
+- `(u1', ... un') => e'`
+  - `u1' ... un'` は、他と衝突しない識別子
+
+---
+
+## 解説（３）
+
+- `list.foldLeft(0)(_ + _)`
+
+が
+
+- `list.foldLeft(0){(x1, x2) => x1 + x2}`
+
+に展開される
+
+---
+
+## 構文カテゴリ再訪（１）
+
+```
+Expr         ::=  (Bindings | id | `_') `=>' Expr // 無名関数
+               |  Expr1
+Expr1        ::=  ...
+               |  [SimpleExpr `.'] id `=' Expr // メンバへの代入
+               |  SimpleExpr1 ArgumentExprs `=' Expr
+               |  PostfixExpr
+               |  PostfixExpr Ascription
+               |  ...
+```
+
+---
+
+## 構文カテゴリ再訪（２）
+
+
+```
+PostfixExpr  ::=  InfixExpr [id [nl]]
+InfixExpr    ::=  PrefixExpr
+               |  InfixExpr id [nl] InfixExpr // 中置式
+PrefixExpr   ::=  [`-' | `+' | `~' | `!'] SimpleExpr // 前置式
+SimpleExpr   ::=  ...
+               |  BlockExpr // ブロック式
+               |  SimpleExpr1 [`_'] // Eta Expansion
+SimpleExpr1  ::=  ...
+               |  SimpleExpr `.' id // メンバの参照
+               |  SimpleExpr1 ArgumentExprs // 関数呼び出し
+```
+
+---
+
+## 還元の順序
+
+- `SimpleExpr1` に還元可能なもの
+  - メンバの参照または関数呼び出し
+- `SimpleExpr` に還元可能なもの
+  - ブロック式または `SimpleExpr` （＋Eta Expansion）
+- `PrefixExpr` に還元可能なもの
+  - `SimpleExpr` または前置式
+- ...
+- `Expr` に還元可能なもの
+  - 無名関数または `Expr1`
 
 </script></section>
 
