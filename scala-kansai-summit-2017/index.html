@@ -511,6 +511,7 @@ list.foldLeft(0)(_ + _ + 1)
 
 - `_ + _` は `InfixExpr`
 - `_ + _ + 1` も `InfixExpr`
+  - `(((_ + _):InfixExpr) + 1):InfixExpr`
   - `InfixExpr ==> PostfixExpr`
   - `PostfixExpr ==> Expr1`
   - `Expr1 ==> Expr`
@@ -527,7 +528,7 @@ list.foldLeft(0)(add(1, add(_, _)))
 
 - `add(_, _)` はメソッド呼び出しの引数
   - `Expr` になる
-  - したがって、 `(x, y) => add(x, y)`
+  - `add(1, (x, y) => add(x, y))` となる
 
 ---
 
