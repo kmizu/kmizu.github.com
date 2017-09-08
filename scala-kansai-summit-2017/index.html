@@ -286,9 +286,10 @@ list.foldLeft(0)((_.+(_)).+(2))
 ## From SLS 6.23.1（１）
 
 ```
-構文カテゴリExprの式中に、識別子が有効な箇所に_（アンダースコア）
-を埋め込むことができる。そのような式は無名関数を表現する。２回以上
-出現いた場合は、複数の引数を表現する。
+構文カテゴリExprの式中に、識別子が有効な
+箇所に_（アンダースコア）を埋め込むことができる。
+そのような式は無名関数を表現する。２回以上
+出現した場合は、複数の引数を表現する。
 ```
 
 ---
@@ -343,15 +344,12 @@ Expr ::=  (Bindings | id | `_") `=>" Expr
 
 ## 解説（１）
 
-- `e` は `u` を**真に** 含む
 - 以下の解釈はない
 
 ```scala
-list.map(_) ==> 
-list.map{x => x}
+list.map(_) ==> list.map{x => x}
 ```
    
-- `e` が `u` を**真に** 含まない
 - 以下はOK
 
 ```scala
@@ -400,14 +398,14 @@ list.foldLeft(0){(x, y) => add(add(x, y))}
 ## カテゴリ再訪（１）
 
 ```
-Expr         ::=  (Bindings | id | `_') `=>' Expr // 無名関数
+Expr  ::=  (Bindings | id | `_') `=>' Expr
                |  Expr1
-Expr1        ::=  ...
-               |  [SimpleExpr `.'] id `=' Expr // メンバへの代入
-               |  SimpleExpr1 ArgumentExprs `=' Expr
-               |  PostfixExpr
-               |  PostfixExpr Ascription
-               |  ...
+Expr1 ::=  ...
+      |  [SimpleExpr `.'] id `=' Expr 
+      |  SimpleExpr1 ArgumentExprs `=' Expr
+      |  PostfixExpr
+      |  PostfixExpr Ascription
+      |  ...
 ```
 
 ---
@@ -416,16 +414,15 @@ Expr1        ::=  ...
 
 
 ```
-PostfixExpr  ::=  InfixExpr [id [nl]]
-InfixExpr    ::=  PrefixExpr
-               |  InfixExpr id [nl] InfixExpr // 中置式
-PrefixExpr   ::=  [`-' | `+' | `~' | `!'] SimpleExpr // 前置式
-SimpleExpr   ::=  ...
-               |  BlockExpr // ブロック式
-               |  SimpleExpr1 [`_'] // Eta Expansion
-SimpleExpr1  ::=  ...
-               |  SimpleExpr `.' id // メンバの参照
-               |  SimpleExpr1 ArgumentExprs // 関数呼び出し
+PostfixExpr ::=  InfixExpr [id [nl]]
+InfixExpr   ::=  PrefixExpr
+            |  InfixExpr id [nl] InfixExpr // 中置式
+PrefixExpr  ::=  [`-' | `+' | `~' | `!'] SimpleExpr // 前置式
+SimpleExpr  ::=  ...
+            |  SimpleExpr1 [`_']
+SimpleExpr1 ::=  ...
+            |  SimpleExpr `.' id // メンバの参照
+            |  SimpleExpr1 ArgumentExprs // 関数呼び出し
 ArgumentExprs ::= '(' Expr ... ')'
 ```
 
