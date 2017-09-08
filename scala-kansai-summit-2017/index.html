@@ -86,6 +86,9 @@
 list.map(_.size)
 ```
 
+1. `list.map{(x) => x.size}`
+2. `(x) => list.map{x.size}`
+
 ---
 
 ## 回答（１）
@@ -103,6 +106,9 @@ list.map{x => x.size}
 ```scala
 list.foldLeft(0)(_ + _)
 ```
+
+1. `list.foldLeft(0){(x, y) => x + y}`
+2. `(x, y) => list.foldLeft(0)(x + y)`
 
 ---
 
@@ -122,6 +128,9 @@ list.foldLeft(0){(x, y) => x + y}
 list.map(_)
 ```
 
+1. `list.map{x => x}`
+2. `(x) => list.map(x)`
+
 ---
 
 ## 回答（３）
@@ -140,6 +149,10 @@ list.map(_)
 list.map(((1).+(_)).+(3))
 ```
 
+1. `list.map{((x) => (1 + x)) + 3}`
+2. `list.map{x => ((1).+(x)) + 3}`
+
+
 ---
 
 ## 回答（４）
@@ -156,11 +169,14 @@ list.map{((x) => (1 + x)) + 3}
 
 ## クイズ（５）
 
--- 以下のコードの展開形を答えよ
+- 以下のコードの展開形を答えよ
 
 ```scala
 list.foldLeft(0)(_ + _ + 1)
 ```
+
+1. `list.foldLeft(0){(x, y) => x + y + 1}`
+2. `(x, y) => list.foldLeft(0){x + y + 1}`
 
 ---
 
@@ -183,6 +199,9 @@ list.foldLeft(0){(x, y) => x + y + 1)
 def add(x: Int, y: Int) = x + y
 list.foldLeft(0)(add(1, add(_, _)))
 ```
+1. `(x, y) => list.foldLeft(0)(add(1, add(x, y)))`
+2. `list.foldLeft(0){(x, y) => add(1, add(x, y))}`
+3. `list.foldLeft(0)(add(1, (x, y) => add(x, y)))`
 
 ---
 
