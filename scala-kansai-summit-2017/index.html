@@ -104,18 +104,18 @@ list.map{x => x.size}
 - 以下のコードの展開形を答えよ
 
 ```scala
-list.foldLeft(0)(_ + _)
+list.map(_.size + 1)
 ```
 
-1. `list.foldLeft(0){(x, y) => x + y}`
-2. `(x, y) => list.foldLeft(0)(x + y)`
+1. `list.map{x => x.size + 1}`
+2. `list.map{(x => x.size) + 1}`
 
 ---
 
 ## 回答（２）
 
 ```scala
-list.foldLeft(0){(x, y) => x + y}
+list.map{x => x.size + 1}
 ```
 
 ---
@@ -125,19 +125,21 @@ list.foldLeft(0){(x, y) => x + y}
 - 以下のコードの展開形を答えよ
 
 ```scala
-list.map(_)
+list.map((_.size) + 1)
 ```
 
-1. `list.map{x => x}`
-2. `(x) => list.map(x)`
+1. `list.map{(x => x.size) + 1}`
+2. `list.map{x => x.size + 1}`
 
 ---
 
 ## 回答（３）
 
 ```scala
-(x) => list.map(x)
+list.map{(x => x.size) + 1}
 ```
+
+- （２）と同じはずなのに！
 
 ---
 
@@ -220,38 +222,6 @@ list.foldLeft(0)(add(1, (x, y) => add(x, y)))
 
 - 何故こういう展開形になるのかを探る
 - なるべく正確な解釈を導く
-
----
-
-## プレースホルダ構文（基本編）（１）
-
-```scala
-list.map(_.size)
-```
-
-は
-
-```scala
-list.map(x => x.size)
-```
-
-に展開される
-
----
-
-## プレースホルダ構文（基本編）（２）
-
-```scala
-list.foldLeft(0)(_ + _)
-```
-
-は
-
-```scala
-list.foldLeft(0)((a, b) => a + b)
-```
-
-に展開される
 
 ---
 
