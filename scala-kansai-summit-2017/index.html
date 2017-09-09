@@ -193,19 +193,18 @@ list.map{((x) => (x + 1)) + 2}
 
 ```scala
 def add(x: Int, y: Int) = x + y
-list.foldLeft(0)(add(1, add(_, _)))
+list.map(add(1, add(2, _)))
 ```
-1. `(x, y) => list.foldLeft(0)(add(1, add(x, y)))`
-2. `list.foldLeft(0){(x, y) => add(1, add(x, y))}`
-3. `list.foldLeft(0)(add(1, (x, y) => add(x, y)))`
+1. `(x) => list.map(add(1, add(2, x)))`
+2. `list.map{x => add(1, add(2, x))}`
+3. `list.map(add(1, x => add(2, x)))`
 
 ---
 
 ## 回答（６）
 
 ```scala
-def add(x: Int, y: Int) = x + y
-list.foldLeft(0)(add(1, (x, y) => add(x, y)))
+list.map(add(1, x => add(2, x)))
 ```
 
 - コンパイルエラー
@@ -231,7 +230,7 @@ obj.method _
 Eta Expansionのための構文と
 
 ```scala
-ob.method(_)
+obj.method(_)
 ```
 
 プレースホルダ構文は別物
@@ -246,13 +245,13 @@ ob.method(_)
 - 構文解析時に作用する
 
 ```scala
-list.foldLeft(0)(_ + _ + 2)
+list.map(_ + 1 + 2)
 ```
 
 と
 
 ```scala
-list.foldLeft(0)((_.+(_)).+(2))
+list.map((_.+(1)).+(2))
 ```
 
 が違う
@@ -352,8 +351,8 @@ list.map(_.size) ==> list.map{x => x.size}
 - 以下の解釈はない
 
 ```scala
-list.foldLeft(0)(add(add(_, _))) ==> 
-list.foldLeft(0){(x, y) => add(add(x, y))}
+list.map(add(add(1, _), 2) ==> 
+list.map{x => add(add(1, x), 2)}
 ```
 
 - 外側の `add()` が内側の `add()` を真に含む
@@ -371,11 +370,11 @@ list.foldLeft(0){(x, y) => add(add(x, y))}
 
 ## 解説（３）
 
-- `list.foldLeft(0)(_ + _)`
+- `list.map(_ + 1 + 2)`
 
 が
 
-- `list.foldLeft(0){(x1, x2) => x1 + x2}`
+- `list.map{x => x + 1 + 2}`
 
 に展開される
 
@@ -447,10 +446,10 @@ list.map(_.size)
 ## 考察（２）
 
 ```scala
-list.foldLeft(0)(_ + _)
+list.map(_ + 1)
 ```
 
-- `_ + _` は `InfixExpr`
+- `_ + 1` は `InfixExpr`
   - `InfixExpr ==> PostfixExpr` 
   - `PostfixExpr ==> Expr1`
   - `Expr1 ==> Expr`
@@ -489,12 +488,12 @@ list.map(((1).+(_)).+(3))
 ## 考察（５）
 
 ```scala
-list.foldLeft(0)(_ + _ + 1)
+list.map(_ + 1 + 2)
 ```
 
-- `_ + _` は `InfixExpr`
-- `_ + _ + 1` も `InfixExpr`
-  - `(((_ + _):InfixExpr) + 1):InfixExpr`
+- `_ + 1` は `InfixExpr`
+- `_ + 1 + 2` も `InfixExpr`
+  - `(((_ + 1):InfixExpr) + 2):InfixExpr`
   - `InfixExpr ==> PostfixExpr`
   - `PostfixExpr ==> Expr1`
   - `Expr1 ==> Expr`
@@ -506,14 +505,14 @@ list.foldLeft(0)(_ + _ + 1)
 
 ```scala
 def add(x: Int, y: Int) = x + y
-list.foldLeft(0)(add(1, add(_, _)))
+list.map(add(1, add(2, _)))
 ```
 
-- `add(_, _)` はメソッド呼び出しの引数
+- `add(2, _)` はメソッド呼び出しの引数
   - `Expr` になる
-  - `add(1, (x, y) => add(x, y))` となる
-- `(x, y) => add(1, add(x, y))` はあり得ない
-  - `add(_, _)` を含んでしまう
+  - `add(1, x => add(2, x))` となる
+- `x => add(1, add(2, x))` はあり得ない
+  - `add(2, _)` を含んでしまう
 
 ---
 
