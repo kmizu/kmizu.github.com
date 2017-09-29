@@ -221,6 +221,18 @@ def report(succ: Int, fail: Int, logs: LogList @unique): Unit = {
 }
 ```
 
+- `logs.add(log)` は型エラー
+
+---
+
+## `capture(t1, t2)`
+
+- `t1: T1` and `t2: T2`
+- `p1▷T1` and `p2▷T2`
+- `t1` を指す領域を `t2` の指す領域へマージ
+- `t1` の指す領域（へのエイリアス）を返す
+  - ただし、 `p2▷T1` になる
+
 ---
 
 ## simplified core of partest（２）
@@ -244,6 +256,19 @@ def report(succ: Int, fail: Int, logs: LogList @unique): Unit = {
 
 ---
 
+## `swap(t1.l, t2)`
+
+- `t1.l: T1` and `t2: T2`
+- `p1▷T!` and `p2▷T2`
+- `t1.l` を `t2` の値で更新
+  - `t1.l` は一意なフィールドへのアクセス
+  - `t2` は一意なオブジェクト
+- `t1.l` の値に対する一意な参照を返す
+  - `fresh_p▷T1`
+  - `p2` は消費される
+
+---
+
 ## simplified core of partest（３）
 
 ```scala
@@ -251,10 +276,10 @@ private logFiles: LogList @unique = new LogList
 
 def runTests(kind: String, tests: List[Files]) {
   var succ, fail = 0
-  val logs: LogList @unique = swap(this.logFiles, null)
   for(test <- tests) {
     val log: LogFile @unique = createLogFile(test)
     // run tests ...
+    val logs: LogList @unique = swap(this.logFiles, null)
     logs.add(capture(log, logs))
     swap(this.logFiles, logs)
   }
@@ -293,12 +318,12 @@ def report(succ: Int, fail: Int, logs: LogList @unique): Unit = {
 
 - 注釈がいっぱいでしんどい
 
-- 結構ad hocっぽい
+- 結構アドホックな印象
   - `capture` とか `swap` とか
 
-- 現行Scalaの実装に（たぶん）対応できない
-  - コンパイラプラグインなせい
-  - 今ならマクロとか使うべきところ？
+- 現行Scalaの実装に（たぶん）対応してない
+  - 当時はScala 2.8
+  - 今ならマクロを使うべき？
 
 </script></section>
 
