@@ -166,7 +166,7 @@ val newArray: oldArray.updated(0, 4)
 
 - 本論文における中心的な概念
 
-- `p▷T` : 型 `T` は `q` によって守られる
+- `q▷T` : 型 `T` は `q` によって守られる
 
 - Capabilityの二つの役割
   - ヒープ上のdisjointな領域の表現
@@ -202,7 +202,7 @@ class LogList {
 
 ---
 
-## simplified core of partest
+## simplified core of partest（１）
 
 ```scala
 def runTests(kind: String, tests: List[Files]) {
@@ -212,6 +212,51 @@ def runTests(kind: String, tests: List[Files]) {
     val log: LogFile @unique = createLogFile(test)
     // run tests ...
     logs.add(log)
+  }
+  report(succ, fail, logs)
+}
+
+def report(succ: Int, fail: Int, logs: LogList @unique): Unit = {
+  master ! new Results(succ, fail, logs)
+}
+```
+
+---
+
+## simplified core of partest（２）
+
+```scala
+def runTests(kind: String, tests: List[Files]) {
+  var succ, fail = 0
+  val logs: LogList @unique = new LogList
+  for(test <- tests) {
+    val log: LogFile @unique = createLogFile(test)
+    // run tests ...
+    logs.add(capture(log, logs))
+  }
+  report(succ, fail, logs)
+}
+
+def report(succ: Int, fail: Int, logs: LogList @unique): Unit = {
+  master ! new Results(succ, fail, logs)
+}
+```
+
+---
+
+## simplified core of partest（３）
+
+```scala
+private logFiles: LogList @unique = new LogList
+
+def runTests(kind: String, tests: List[Files]) {
+  var succ, fail = 0
+  val logs: LogList @unique = swap(this.logFiles, null)
+  for(test <- tests) {
+    val log: LogFile @unique = createLogFile(test)
+    // run tests ...
+    logs.add(capture(log, logs))
+    swap(this.logFiles, logs)
   }
   report(succ, fail, logs)
 }
