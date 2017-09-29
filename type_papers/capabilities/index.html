@@ -101,7 +101,7 @@
 - Actorライブラリを使ったプログラミング
   - Actor間でのメッセージ送信
 - 送信されたメッセージにはアクセス不可能
-  - race conditionを防ぐため
+  - 競合状態を防ぐため
 - 物理的なメッセージ転送は高価
   - マーシャリング
 
@@ -115,7 +115,7 @@
   - Erlangなどで採用
 
 - 別名付け無しのメッセージ
-  - メッセージへの一意な参照のみを許す
+  - メッセージへの **一意な参照** のみを許す
   - 送信後は参照へのアクセスを許さない
   - Scalaではこっちを使いたい
 
@@ -123,7 +123,7 @@
 
 ## 脇道：一意型について
 
-- 代表選手：Clean
+- 代表選手（？）：Clean
 
 - 別名付けを **観測できなければ** 不変と同じ
   - オブジェクトを破壊的に更新しても良い
@@ -132,43 +132,64 @@
 
 ```scala
 val oldArray: *Array[Int] = Array(1, 2, 3)
-val newArray: oldArray.updated(0, 4)
+val newArray: *Array[Int] = oldArray.updated(0, 4)
 // println(oldArray(0)) compile error
 ```
 
 ---
 
-## 単純な一意型の問題
+## 参照の一意性に関する先行研究
 
-- 送信できるオブジェクトの形式が制限される
-
-- OK: 木構造
-
-- NG: グラフ構造
-  - オブジェクトの参照関係はグラフ構造を持つ
-
----
-
-## 先行研究
+- 山ほどある
 
 ![先行研究](related-works.png)
 
 ---
 
-### (External|Separate) Uniqueness
+### Deep Encapsulation and
+### Full Encapsulation
+
+- Deep encapsulation
+  - オブジェクトの **内部状態** への
+    参照が一意であればよしとする
+
+- Full encapsulation
+  - Deep encapsulation +
+  - オブジェクト自体への参照を制限
+
+- Full encapsulationについて考える
+  - Deep encapsulationは競合状態の除去には不十分
+
+---
+
+## Separately-unique
+
+- `separate(x, y)`
+  - `x` と `y` から到達可能なオブジェクトは共有されない
+- `x` が **separately-unique** :
+
+  iff `∀y≠x. y accessible ⇒ separate(x, y)`
+
+---
+
+## (External|Separate) Uniqueness
 
 ![一意性](uniqueness-figure.png)
+
+- `x` が **separately-unique** ならば：
+  - `x` から到達可能なオブジェクトが共有されない
+- 並行プログラムで競合状態が起きないことの保証
 
 ---
 
 ## Capability
 
-- 本論文における中心的な概念
-
-- `q▷T` : 型 `T` は `q` によって守られる
+- `q▷T` :  `T` は `q` によってガードされる
+  - `T` ：型
+  - `q` ：capability
 
 - Capabilityの二つの役割
-  - ヒープ上のdisjointな領域の表現
+  - ヒープ上の排他的な領域の表現
   - 領域内におけるオブジェクトへのアクセス権
 
 - 一意性を細かく制御可能
@@ -180,7 +201,7 @@ val newArray: oldArray.updated(0, 4)
 - `@unique`
   - 参照が一意な変数で、capabilityを持つ
 - `@transient`
-  - レシーバに付加される
+  - メソッドに付加される
   - capabilityを消費しない
 - `@peer(this)`
   - `this` と同じヒープ領域を指す
@@ -215,7 +236,6 @@ def runTests(kind: String, tests: List[Files]) {
   }
   report(succ, fail, logs)
 }
-
 def report(succ: Int, fail: Int, logs: LogList @unique): Unit = {
   master ! new Results(succ, fail, logs)
 }
@@ -248,7 +268,6 @@ def runTests(kind: String, tests: List[Files]) {
   }
   report(succ, fail, logs)
 }
-
 def report(succ: Int, fail: Int, logs: LogList @unique): Unit = {
   master ! new Results(succ, fail, logs)
 }
@@ -259,35 +278,25 @@ def report(succ: Int, fail: Int, logs: LogList @unique): Unit = {
 ## `swap(t1.l, t2)`
 
 - `t1.l: T1` and `t2: T2`
-- `p1▷T!` and `p2▷T2`
+- `p1▷T1` and `p2▷T2`
 - `t1.l` を `t2` の値で更新
-  - `t1.l` は一意なフィールドへのアクセス
+  - `t1.l` は `@unique` なフィールドへのアクセス
   - `t2` は一意なオブジェクト
 - `t1.l` の値に対する一意な参照を返す
-  - `fresh_p▷T1`
+  - `p'▷T1`
   - `p2` は消費される
 
 ---
 
-## simplified core of partest（３）
+## logs using `swap`
 
 ```scala
-private logFiles: LogList @unique = new LogList
-
+private logFiles: LogList @unique = ...
 def runTests(kind: String, tests: List[Files]) {
-  var succ, fail = 0
-  for(test <- tests) {
-    val log: LogFile @unique = createLogFile(test)
-    // run tests ...
-    val logs: LogList @unique = swap(this.logFiles, null)
-    logs.add(capture(log, logs))
-    swap(this.logFiles, logs)
-  }
-  report(succ, fail, logs)
-}
-
-def report(succ: Int, fail: Int, logs: LogList @unique): Unit = {
-  master ! new Results(succ, fail, logs)
+  // ...
+  val logs: LogList @unique = swap(this.logFiles, null)
+  logs.add(capture(log, logs))
+  swap(this.logFiles, logs)
 }
 ```
 
@@ -308,7 +317,22 @@ def report(succ: Int, fail: Int, logs: LogList @unique): Unit = {
 
 ## 型付け規則とか
 
-ばっさり略
+- ばっさり略
+
+---
+
+## 拡張
+
+色々拡張できる
+
+- クロージャ
+- ネストしたクラス
+
+---
+
+## 実装
+
+Scala Compilerのプラグインとして実装
 
 ---
 
@@ -316,9 +340,9 @@ def report(succ: Int, fail: Int, logs: LogList @unique): Unit = {
 
 - 実用性を意識した提案
 
-- 注釈がいっぱいでしんどい
+- 注釈がいっぱいなのはしんどい
 
-- 結構アドホックな印象
+- 実用的だけど、アドホックな印象
   - `capture` とか `swap` とか
 
 - 現行Scalaの実装に（たぶん）対応してない
