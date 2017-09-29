@@ -155,8 +155,7 @@ val newArray: oldArray.updated(0, 4)
 
 ---
 
-### External Uniqueness
-### Separate Uniqueness
+### (External|Separate) Uniqueness
 
 ![一意性](uniqueness-figure.png)
 
@@ -181,6 +180,7 @@ val newArray: oldArray.updated(0, 4)
 - `@unique`
   - 参照が一意な変数で、capabilityを持つ
 - `@transient`
+  - レシーバに付加される
   - capabilityを消費しない
 - `@peer(this)`
   - `this` と同じヒープ領域を指す
