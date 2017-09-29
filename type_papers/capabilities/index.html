@@ -100,36 +100,28 @@
 
 - Actorライブラリを使ったプログラミング
   - Actor間でのメッセージ送信
-
-- mutableなオブジェクトを送信：
-  - race conditionが発生する可能性
-  - Actor間でのオブジェクトのaliasing
-
-- immutableなオブジェクトを送信：
-  - 安全
+- 送信されたメッセージにはアクセス不可能
+  - race conditionを防ぐため
+- 物理的なメッセージ転送は高価
+  - マーシャリング
 
 ---
 
-## 考察
+## 二つのアプローチ
 
-- mutableなオブジェクトを送信してはいけない
-  - 本当に？
+- 不変なオブジェクト型のみを許す
+  - 不変メッセージ
+  - プリミティブ型、文字列、XMLなど
+  - Erlangなどで採用
 
-- Actor間でオブジェクトが **共有** されなければいい
-
-```scala
-val bufer = Buffer[Int]()
-buffer ++= (1, 2, 3, 4)
-anActor ! buffer
-// don"t touch to buffer
-```
-
-- オブジェクトが **共有** されないことを保証したい
-  - 参照の **一意性**
+- 別名付け無しのメッセージ
+  - メッセージへの一意な参照のみを許す
+  - 送信後は参照へのアクセスを許さない
+  - Scalaではこっちを使いたい
 
 ---
 
-## 一意型について
+## 脇道：一意型について
 
 - 代表選手：Clean
 
@@ -154,8 +146,6 @@ val newArray: oldArray.updated(0, 4)
 
 - NG: グラフ構造
   - オブジェクトの参照関係はグラフ構造を持つ
-
-- 制限を緩めたい
 
 ---
 
@@ -197,30 +187,30 @@ val newArray: oldArray.updated(0, 4)
 
 ---
 
-## LogList（１−１）
+## LogList
 
 ```scala
 class LogList {
   var elem: LogFile = null
   var next: LogList = this
-  @transient def add(f: LogFile @peer(this)) = {
-    if(isEmpty) { elem = f; next = new LogList }
-    else next.add(f)
+  @transient def add(file: LogFile @peer(this)) = {
+    if(isEmpty) { elem = file; next = new LogList }
+    else next.add(file)
   }
 }
 ```
 
 ---
 
-## LogList（１−２）
+## simplified core of partest
 
 ```scala
-def runTests(kind: String, tests: List[Files]): Unit = {
+def runTests(kind: String, tests: List[Files]) {
   var succ, fail = 0
   val logs: LogList @unique = new LogList
-  for(t <- tests) {
-    val log: LogFile @unique = newLogFile(test)
-    run tests ...
+  for(test <- tests) {
+    val log: LogFile @unique = createLogFile(test)
+    // run tests ...
     logs.add(log)
   }
   report(succ, fail, logs)
@@ -233,37 +223,36 @@ def report(succ: Int, fail: Int, logs: LogList @unique): Unit = {
 
 ---
 
-## LogList（１−３）
+## Core Language Syntax
 
-```scala
-def runTests(kind: String, tests: List[Files]): Unit = {
-  var succ, fail = 0
-  val logs: LogList @unique = new LogList
-  for(t <- tests) {
-    val log: LogFile @unique = newLogFile(test)
-    run tests ...
-    logs.add(capture(log, logs))
-  }
-  report(succ, fail, logs)
-}
+![Core Language](core-language.png)
 
-def report(succ: Int, fail: Int, logs: LogList @unique): Unit = {
-  master ! new Results(succ, fail, logs)
-}
-```
+---
+
+## Syntax for Heaps, Environments,
+## and Dynamic Capabilities
+
+![Dynamic Capabilities](dynamic-capabilities.png)
+
+---
+
+## 型付け規則とか
+
+ばっさり略
 
 ---
 
 ## 感想
 
-- Capabilityベースの一意性は興味深い
+- 実用性を意識した提案
 
 - 注釈がいっぱいでしんどい
-  - もうちょっと推論できないのか
 
-- captureがテキトー過ぎる
+- 結構ad hocっぽい
+  - `capture` とか `swap` とか
 
-- コンパイラプラグインなせいで現行Scalaの実装に対応できない
+- 現行Scalaの実装に（たぶん）対応できない
+  - コンパイラプラグインなせい
   - 今ならマクロとか使うべきところ？
 
 </script></section>
