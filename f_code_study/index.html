@@ -250,6 +250,17 @@ sum(List(1.5, 2.5, 3.5)) // => 7.5
 
 ---
 
+## 型クラス
+
+* 元々はプログラミング言語Haskellの言語機能
+* Martin Odersky教授は型クラスをScalaに導入したかった
+  * [参考リンク](http://lampwww.epfl.ch/~odersky/talks/wg2.8-boston06.pdf)
+  * →implicit parameterの導入
+* Scalaでは、 `Numeric` や `Monoid` のような、implicitな値として使われることが
+　想定されているジェネリックな型のことを型クラスと呼ぶ
+
+---
+
 ## 高度なimplicit parameterの使い方
 
 * タプル型 `(A, B)` の値に順序を付けたい
@@ -288,6 +299,96 @@ List((1, 2), (4, 3)).sorted  // => List((1, 2), (4, 3))
 List((4, 3), (1, 2)).sorted // => List((1, 2), (4, 3))
 List((new Object, new Object), (new Object, new Object)).sorted // => error: No implicit Ordering defined for (Object,Object).
 ```
+
+---
+
+## 応用編〜 Reads[A] （１）
+
+```scala
+trait Reads[A] {
+  def reads(json: JsValue): JsResult[A]
+  ...
+}
+```
+
+* 何らかのJSONの値（ `JsValue` ）を読み込んで
+* `A` 型の値（ `JsResult[A]` ）に変換するための型クラス
+
+---
+
+## 応用編〜 Reads[A] （２）
+
+```scala
+case class Point(x: Int, y: Int)
+case class Line(start: Point, end: Point)
+```
+
+* これらのケースクラスに読み取りたい
+
+---
+
+## 応用編〜 Reads[A] （３）
+
+
+```scala
+case class Point(x: Int, y: Int)
+case class Line(start: Point, end: Point)
+
+implicit val pointReads: Reads[Point] = (
+  (JsPath \ "x").read[Int] and
+  (JsPath \ "y").read[Int]
+)(Point.apply _)
+
+implicit val lineReads: Reads[Line] = (
+  (JsPath \ "start").read[Point] and
+  (JsPath \ "end").read[Point]
+)
+```
+
+* `read[T]` で、implicitな `Reads[T]` のインスタンスを引っ張ってくる
+
+---
+
+## 応用編〜 Writes[A] （１）
+
+```scala
+trait Writes[-A] {
+  def writes(o: A): JsValue
+}
+```
+
+* 何らかの型（ `A` ）の値を読み込んで
+* JSONの値（ `JsValue` ）に変換するための型クラス
+
+---
+
+## 応用編〜 Writes[A] （２）
+
+```scala
+case class Point(x: Int, y: Int)
+case class Line(start: Point, end: Point)
+```
+
+* をJSONにシリアライズしたい
+
+---
+
+## 応用編〜 Writes[A] （３）
+
+```scala
+case class Point(x: Int, y: Int)
+case class Line(start: Point, end: Point)
+implicit val pointWrites: Writes[Point] = (
+  (JsPath \ "x").write[Int] and
+  (JsPath \ "y").write[Int]
+)(unlift(Point.unapply))
+implicit val lineWrites: Writes[Line] = (
+  (JsPath \ "start").write[Point] and
+  (JsPath \ "end").write[Point]
+)(unlift(Line.unapply))
+```
+
+* `write[T]` で、 implicit な `Writes[T]` のインスタンスを引っ張ってくる
 
 ---
 
