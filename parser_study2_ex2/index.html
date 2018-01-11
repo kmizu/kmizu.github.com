@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="ja">
+
+	<head>
+		<meta charset="utf-8">
+
+    <title>構文解析ハンズオン Vol.2</title>
+
+		<meta name="description" content="構文解析ハンズオン Vol.2">
+		<meta name="author" content="水島宏太">
+
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/black.css" id="theme">
+<style type='text/css'>     
+  .reveal h1,               
+  .reveal h2,               
+  .reveal h3,               
+  .reveal h4,               
+  .reveal h5,               
+  .reveal h6 {              
+    text-transform: none;   
+  }                         
+</style>                    
+
+		<!-- Code syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+<div class='slides'>
+<section data-markdown data-separator='^\n---$'><script type='text/template'>
+
+## 構文解析ハンズオン Vol.2
+## 2018/01/13（土）
+## 水島宏太
+
+---
+
+# はじめに
+
+---
+
+### 自己紹介
+
+- Twitter ID: [@kmizu](https://twitter.com/kmizu)
+- GitHub: [kmizu](https://github.com/kmizu)
+- Love: Nemerle/Rust/Standard ML/Scala/...
+  - 言語オタク
+- 構文解析おじさん
+  - 色々なものを構文解析するのが好きです
+    - 自然言語を除く
+- プログラミング言語も作ってます
+  - [Onion](https://github.com/onion-lang/onion)
+    - こっちは開発停滞中
+  - [Klassic](https://github.com/klassic/klassic)
+    - こっちがアクティブ
+
+---
+
+### ハンズオンの趣旨
+
+- 構文解析は重要な技能
+  - 正規表現で簡単に扱えない入力の正当性チェック
+  - 業務用ミニ言語の作成
+  - , etc.
+- 機械可読な言語の構文解析はある程度確立された技術
+  - 「こうすればうまくいく」やり方がある
+- 基本的な構文解析のやり方を習得してもらう
+- 今回扱う範囲：数値のパーザ〜JSONパーザ
+
+---
+
+### 連絡事項
+
+- 飲食は自由です
+  - ただし、散らかさないでください
+- 今回は懇親会を行いません
+  - へとへとに疲れていると思われるので
+
+---
+
+### チューター紹介
+
+- tetsuromさん
+- furandon_pig さん
+
+---
+
+# 構文解析とは
+
+---
+
+## 構文解析とは
+
+- 一言でいうと：
+  - 入力文字列をある言語として解析して、木構造へ変換する処理
+- 何らかの言語の構造は木構造として表現できることが多い
+- 機械可読な（曖昧でない）言語は、ほぼ木構造として表現できる
+
+---
+
+```
+(1 + 2) * (3 + 4) / 5
+
+
+|
+v
+
+
+       "/"
+      /    \
+     *      5
+    / \
+   /   \
+  +     +
+ / \   / \
+1   2 3   4
+```
+
+---
+
+## 今回構文解析する言語
+
+1. １桁整数
+1. 非負整数
+1. 単純な算術式
+1. 一般的な算術式
+  - 四則演算
+  - ネスト可能
+  - カッコによる優先順位変更
+1. 正規表現
+1. JSON
+
+---
+
+# １桁整数の構文解析
+
+---
+
+## １桁整数はどのような文法か？
+
+- 入力文字列の長さは１（固定）
+- １文字目は次のいずれか
+  - '0' --> 0
+  - '1' --> 1
+  - '2' --> 2
+  - '3' --> 3
+  - '4' --> 4
+  - ...
+  - '9" --> 9
+
+長い！
+
+---
+
+## (E)ENFの導入と用語
+
+- EBNF（Extended Backus–Naur Form）
+  - 以後、BNFと表記
+- プログラミング言語などの文法を表現する記法
+
+```
+digit = '0' | '1' | '2' | '3' | '4' 
+      | '5' | '6' | '7' | '8' | '9'
+      ;
+
+または
+
+digit = '0'...'9'; // 利便性のため
+```
+
+- `digit` : 非終端記号
+- `'0' ... '9'` : 終端記号
+- `digit = ...;` : 構文規則
+
+---
+
+## BNFと構文解析器生成系
+
+- BNF（の変種含む）から構文解析器を自動生成することができる
+  - 構文解析器生成系（Parser Generator）
+  - Yacc (LALR(1)), ANTLR (ALL(*)), Rats!(Packrat Parsing), ...
+- 今回は構文解析器生成系を使わない
+  - 構文解析アルゴリズムを知らないとデバッグできない
+  - 手で書いた方がいいこともある
+
+---
+
+## BNF -> 構文解析器への変換方針
+
+1. 各構文規則を、対応する関数に変換
+1. 非終端記号の参照を、関数呼び出しに変換
+1. `e1 e2 ... en` を関数呼び出しの連続に変換
+1. `e1 | e2 | ... | en` は、関数呼び出しの試行に変換
+  1. 失敗した場合、例外 `ParseFailure` を `throw` する
+  1. `catch` 節で、失敗した場合の巻き戻しを表現
+  1. 選択肢の数に応じて、 `try-catch` のネストを増やす
+    - 単純化のため、この方法の欠点には目をつぶる
+
+---
+
+## BNF -> 構文解析器への変換イメージ
+
+```java
+// statement = whileStatement | forStatement | tryStatement ;
+private AST statement() {
+  try {
+    save();
+    return whileStatement();
+  } catch (ParseFailure e1) {
+    restore();
+  }
+
+  try {
+    save();
+    return forStatement();
+  } catch (ParseFailure e2) {
+    restore();
+    return tryStatement();
+  }
+}
+```
+
+---
+
+## １桁整数の構文解析器
+
+```java
+public int digit() {
+  if(current > input.length()) {
+    throw new ParseFailure("unexpected EOF");
+  }
+  char ch = input.charAt(current);
+  if(!('0' <= ch && ch <= '9')) throw new ParseFailure("character " + ch + "is not digit");
+  consume();
+  return (ch - '0');
+}
+```
+
+---
+
+# ハンズオンタイム
+
+---
+
+## ハンズオンのための準備
+
+1. [リポジトリをclone](https://github.com/kmizu/parser_hands_on)
+2. コンパイルできることを確認
+  - `$ mvn compile`
+3. 構文解析器のファイルを作成
+  - `MyDigitParser.java`
+    - `com.github.kmizu.parser_hands_on.my_parser` パッケージを作成
+  - `com.github.kmizu.parser_hands_on.digit.AbstractDigitParser` を継承
+4. 自分の構文解析器をテストするように書き換える
+  - `src/test/java` 下にある `MyDigitParserTest.java`
+5. テストを実行
+
+---
+
+## Twitterでのつぶやきについて
+
+### `#構文解析ハンズオン`でつぶやいてください
+
+- わからなかった/わかりにくい部分
+- 進捗
+- 感想
+- ,etc. 
+
+フィードバックが欲しいのでよろしくお願いします
+
+---
+
+## 補足：テストの書き換え方法
+
+### `MyDigitParser` の場合
+
+1. `src/test/java/com/github/kmizu/parser_hands_on/answer` に移動
+2. `MyDigitParserTest.java` を開く
+3. import宣言を加える
+
+```java
+import com.github.kmizu.parser_hands_on.my_parser.MyDigitParser;
+```
+
+4. `mvn test` を実行 --> テストが失敗することを確認
+
+---
+
+# 非負整数の構文解析
+
+---
+
+## 非負整数のBNF
+
+```
+// {e} はeの０回以上の繰り返し
+integer = zero | digitFirst {digitRest}; 
+zero = '0';
+digitFirst = '1' | '2' | '3'| '4' | '5' | '6' 
+           | '7' | '8' | '9';
+digitRest = '0' | '1' | '2' | '3'| '4' | '5' | '6' 
+           | '7' | '8' | '9';
+```
+
+---
+
+## 非負整数の構文解析器
+
+```java
+int integer() {
+  try {
+    save(); return zero(); // 最初に0が来たら終わり
+  } catch (ParseFailure e) {
+    restore(); 
+    int result = digitFirst();
+    while(true) { // {digitRest}
+      try { 
+        save(); result = compute(result, digitRest()); 
+      } catch (ParseFailure e) {
+        restore();
+        return result;
+      }
+    }
+  }
+}
+```
+
+---
+
+# ハンズオンタイム
+
+---
+
+## ハンズオンのための準備
+
+1. 構文解析器のファイルを作成
+  - `MyIntegerParser.java`
+  - `com.github.kmizu.parser_hands_on.integer.AbstractIntegerParser` を継承
+4. 自分の構文解析器をテストするように書き換える
+  - `src/test/java` 下にある `MyIntegerParserTest.java`
+5. テストを実行
+
+---
+
+# 単純算術式の構文解析
+
+---
+
+## 単純算術式のBNF
+
+```
+expression = addition | subtraction
+           | multiplication | division | integer;
+addition = integer '+' integer;
+subtraction = integer '-' integer;
+multiplication = integer '*' integer;
+division = integer '/' integer;
+```
+
+---
+
+## 単純算術式の構文解析器
+
+```java
+LimitedExpressionNode expression() {
+  int lhs = integer();
+  try {
+    save(); accept('+');
+    return LimitedExpressionNode.Addition(lhs, integer());
+  } catch (ParseFailure e) {
+    restore();
+  }
+  try {
+    save(); accept('-'); ...
+  } catch (ParseFailure e) { ...  }
+  ...
+}
+```
+
+---
+
+# ハンズオンタイム
+
+---
+
+## ハンズオンのための準備
+
+1. 構文解析器のファイルを作成
+  - `MyLimitedExpressionParser.java`
+  - `com.github.kmizu.parser_hands_on.limited_expression.AbstractLimitedExpressionParser`
+    を継承
+4. 自分の構文解析器をテストするように書き換える
+  - `src/test/java` 下にある `MyLimitedExpressionParserTest.java`
+5. テストを実行
+
+
+---
+
+# 算術式の構文解析
+
+---
+
+## 算術式のBNF
+
+```
+expression = additive;
+additive = multitive 
+           {'+' multitive | '-' multitive};
+multitive = primary
+           {'*' primary | '/' primary};
+primary = '(' expression ')' | integer;
+```
+
+---
+
+# ハンズオンタイム
+
+---
+
+## ハンズオンのための準備
+
+1. 構文解析器のファイルを作成
+  - `MyExpressionParser.java`
+4. 自分の構文解析器をテストするように書き換える
+  - `src/test/java` 下にある `MyExpressionParserTest.java`
+5. テストを実行
+6. `com.github.kmizu.parser_hands_on.expression.ExpressionNode` 
+  のサブクラスのインスタンスを返すようにする
+
+---
+
+# 正規表現の構文解析
+
+---
+
+## 今回扱う正規表現について
+
+- 文字クラス、１回以上の繰り返し、量指定子、先読みなどは実装しない
+- 基本的な正規表現の演算子のみを扱う
+  - `e *` : クリーネ閉包
+  - `e1 e2` : 連接
+  - `e1 | e2` : 選択
+  - `a` : 1文字
+
+---
+
+## 正規表現のBNF
+
+```
+expression = sequencable {'|' sequencable};
+sequencable = repeatable {repeatable};
+repeatable = primary ['*'];
+primary = '(' expression ')' | character;
+```
+
+---
+
+# ハンズオンタイム
+
+---
+
+## ハンズオンのための準備
+
+1. 構文解析器のファイルを作成
+  - `MyRegularExpressionParser.java`
+  - `com.github.kmizu.parser_hands_on.regular_expression.AbstractRegularExpressionParser`
+4. 自分の構文解析器をテストするように書き換える
+  - `src/test/java` 下にある `MyRegularExpressionParserTest.java`
+5. テストを実行
+
+---
+
+# JSONの構文解析
+
+---
+
+## 今回扱うJSONについて
+
+- 空白は扱わない（扱わなくていい）
+  - 余裕がある人は挑戦してください
+- 数値は整数のみに限定
+  - 浮動小数点数の解析にチャレンジも可
+
+---
+
+## JSONのBNF
+
+```
+jvalue = jobject | jarray | jboolean |
+       | jnull | jstring | jnumber;
+jobject = '{' 
+  [jstring ':' jvalue {',' jstring ':' jvalue}]
+'}';
+jarray = '[' [jvalue {',' jvalue}] ']';
+jboolean = 'true' | 'false';
+jnull = 'null';
+jstring = '"' ... '"';
+jnumber = integer;
+```
+
+---
+
+# ハンズオンタイム
+
+---
+
+## ハンズオンのための準備
+
+1. 構文解析器のファイルを作成
+  - `MyJSONParser.java`
+  - `com.github.kmizu.parser_hands_on.json.AbstractJSONParser` を継承
+4. 自分の構文解析器をテストするように書き換える
+  - `src/test/java` 下にある `MyJSONParserTest.java`
+5. テストを実行
+
+---
+
+# 本日はお疲れ様でした
+
+</script></section>
+
+      </div>
+		</div>
+    
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+
+		<script>
+
+			// Full list of configuration options available at:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				transition: 'slide', // none/fade/slide/convex/concave/zoom
+
+				// Optional reveal.js plugins
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true },
+					{ src: 'plugin/notes/notes.js', async: true }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>
