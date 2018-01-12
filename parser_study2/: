@@ -185,9 +185,9 @@ digit = '0'...'9'; // 利便性のため
 
 ## BNF -> 構文解析器への変換方針
 
-1. 各構文規則を、ANTLRの規則に変換
-1. 非終端記号の参照を規則の参照に変換
-1. `'0'` のようなものはそのまま書く
+1. 各構文規則を、対応するANTLRの規則に変換
+1. 非終端記号の参照を、規則の参照に変換
+1. `0` のようなものは、そのまま書く
 
 ---
 
@@ -195,8 +195,7 @@ digit = '0'...'9'; // 利便性のため
 
 ```
 // statement = whileStatement | forStatement | tryStatement ;
-statement : 
-            whileStatement
+statement : whileStatement
           | forStatement
           | tryStatement
           ;
@@ -345,7 +344,7 @@ expression : ??? ;
 additive : ??? ;
 multitive : ??? ;
 primary : ??? ;
-number : NUMBER;
+number : ??? ;
 NUMBER: ('0' | [1-9] [0-9]*); // no leading zeros
 WS  :   [ \t\n\r]+ -> skip ;
 ```
@@ -395,40 +394,18 @@ jnumber = integer;
 
 ---
 
-## JSONの構文解析器
-
-```
-jvalue : jobject | jarray | jboolean |
-       | jnull | jstring | jnumber;
-jobject = ??? ;
-jarray = ??? ;
-jboolean = ??? ;
-jnull = ??? ;
-jstring = '"' ... '"';
-jnumber = ??? ;
-```
-
----
-
-## 補足：文字列リテラルについて
-
-- " {"とエスケープシーケンス以外} " という形になる
-- `(~ ["\\])*` と書ける
-
----
-
 # ハンズオンタイム
 
 ---
 
 ## ハンズオンのための準備
 
-1. 構文解析器のリポジトリをclone
-  - さっきやった
-2. 構文解析器のファイルを編集
-  - `src/main/antlr4/com/github/kmizu/parser_study/Json.g4` ファイルを編集
-3. テストを実行
-  - `mvn test`
+1. 構文解析器のファイルを作成
+  - `MyJSONParser.java`
+  - `com.github.kmizu.parser_hands_on.json.AbstractJSONParser` を継承
+4. 自分の構文解析器をテストするように書き換える
+  - `src/test/java` 下にある `MyJSONParserTest.java`
+5. テストを実行
 
 ---
 
