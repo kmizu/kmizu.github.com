@@ -219,12 +219,36 @@ digit : '0' | '1' | '2' | '3' | '4' | '5'
 ## １桁整数の構文解析器
 
 ```
+grammar Digit; //ファイル名と一致させる
+//規則名 returns [型 名前]
+   : ... | ... | ... ;
 digit returns [int value] // int 型の value を返す
    : n=DIGIT {$value = Integer.parseInt($n.getText());} EOF
       
+//トークンの定義
 DIGIT : '0' | '1' | '2' | '3' | '4' | '5' 
       | '6' | '7' | '8' | '9'
       ;
+```
+
+## トークン
+
+- 構文解析時の最小単位
+  - アルゴリズムによっては存在しない
+
+```
+if(hoge < 100) {
+  println(hoge);
+}
+```
+
+```
+|
+v
+```
+
+```
+if ( hoge < 100 ) { println ( hoge ) ; }
 ```
 
 ---
@@ -276,12 +300,21 @@ digitRest = '0' | '1' | '2' | '3'| '4' | '5' | '6'
 
 ## 整数の構文解析器
 
-- 正規表現のような記法もサポート
+- 大文字で始まるのはトークンの定義
 
 ```
+grammar Integer;
+
 integer: ??? EOF;
 
-INT : ('+' | '-') ('0' | [1-9] [0-9]*); // no leading zero
+integer returns [int value]
+   : n=INTEGER {$value = Integer.parseInt($n.getText());}
+   ;
+
+INTEGER : ???;
+fragment Zero : ???1;
+fragment DigitFirst : ??? ;
+fragment DigitRest: ??? ;
 ```
 
 ---
@@ -339,8 +372,8 @@ primary = '(' expression ')' | integer;
 ## 算術式の構文解析器
 
 ```
-line 
-   : expression EOF;
+grammar Arithmetic;
+
 expression : ??? ;
 additive : ??? ;
 multitive : ??? ;
@@ -398,6 +431,8 @@ jnumber = integer;
 ## JSONの構文解析器
 
 ```
+grammar Json;
+
 jvalue : jobject | jarray | jboolean |
        | jnull | jstring | jnumber;
 jobject = ??? ;
