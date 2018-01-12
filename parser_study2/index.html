@@ -204,6 +204,46 @@ statement :
 
 ---
 
+# ANTLRチュートリアル
+
+---
+
+- 以下の内容のファイルを作成
+  - `src/main/antlr4/com/github/kmizu/parser_study/HelloWorld.g4`
+
+```
+//ファイル名と一致させる
+grammar HelloWorld;
+
+// Javaのパッケージ宣言やimportを書く
+@header {
+  //...
+}
+
+// 規則名 returns [型 名前]
+hello returns [String value]
+                     //returnsに書いた名前に合わせる
+   : 'Hello, World!' {$value = "Hello, World!";} ;
+```
+
+---
+
+- パーザを作成
+
+```java
+import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.Lexer;
+...
+HelloWorldParser parser = new HelloWorldParser(
+    new CommonTokenStream(new HelloLexer(new ANTLRInputStream(new StringReader(input))));
+);
+parser.hello("Hello, World!").value; // パーズする
+parser.hello("Hello,").value; // 失敗する
+```
+
+---
+
 ## １桁整数の構文解析器
 
 ```
