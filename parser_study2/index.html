@@ -72,10 +72,7 @@
   - 色々なものを構文解析するのが好きです
     - 自然言語を除く
 - プログラミング言語も作ってます
-  - [Onion](https://github.com/onion-lang/onion)
-    - こっちは開発停滞中
   - [Klassic](https://github.com/klassic/klassic)
-    - こっちがアクティブ
 
 ---
 
@@ -145,9 +142,10 @@ v
 
 1. 一桁整数
 1. 整数
+1. 単純な算術式
 1. 算術式
 1. JSON
-1. 自由に色々作ってみる
+1. 自由に作ってみる
 
 ---
 
@@ -231,6 +229,8 @@ DIGIT : '0' | '1' | '2' | '3' | '4' | '5'
       ;
 ```
 
+---
+
 ## トークン
 
 - 構文解析時の最小単位
@@ -312,7 +312,7 @@ integer returns [int value]
    ;
 
 INTEGER : ???;
-fragment Zero : ???1;
+fragment Zero : ???;
 fragment DigitFirst : ??? ;
 fragment DigitRest: ??? ;
 ```
@@ -333,6 +333,59 @@ fragment DigitRest: ??? ;
   - `mvn test`
 
 ---
+
+# 単純な算術式の構文解析
+
+---
+
+## 単純な算術式のBNF
+
+```
+expression = number '+' number
+           | number '-' number
+           | number '*' number
+           | number '/' number
+           | number
+           ;
+number = ...;
+```
+
+---
+
+## ANTLRに直してみる
+
+- ほとんど同じ！
+
+```
+grammar SimpleExpression;
+
+expression : number '+' number
+           | number '-' number
+           | number '*' number
+           | number '/' number
+           | number
+           ;
+number : ...;
+```
+
+---
+
+# ハンズオンタイム
+
+---
+
+## ハンズオンのための準備
+
+1. 構文解析器のリポジトリをclone
+  - さっきやった
+2. 構文解析器のファイルを編集
+  - `src/main/antlr4/com/github/kmizu/parser_study/SimpleExpression.g4` ファイルを編集
+3. テストを実行
+  - `mvn test`
+
+
+---
+
 
 # 算術式の構文解析
 
