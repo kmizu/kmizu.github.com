@@ -208,8 +208,13 @@ statement :
 
 ---
 
-- 以下の内容のファイルを作成
-  - `src/main/antlr4/com/github/kmizu/parser_study/HelloWorld.g4`
+- https://github.com/kmizu/parser_study_scaffold をclone
+
+```
+src/main/antlr4/com/github/kmizu/parser_study/HelloWorld.g4
+```
+
+- ↑のファイルに以下の内容を書いて保存
 
 ```
 //ファイル名と一致させる
@@ -222,8 +227,9 @@ grammar HelloWorld;
 
 // 規則名 returns [型 名前]
 hello returns [String value]
-                     //returnsに書いた名前に合わせる
-   : 'Hello, World!' {$value = "Hello, World!";} ;
+//returnsに書いた名前に合わせる
+   : 'Hello, World!' {$value = "Hello, World!";} 
+   ;
 ```
 
 ---
@@ -244,33 +250,22 @@ HelloWorldParser parser = new HelloWorldParser(
         ) 
     )
 );
-System.out.println(parser.hello.value); // パーズする
+System.out.println(parser.hello().value); // パーズする
 ```
 
 ---
 
-## １桁整数の構文解析器
-
-```
-digit : '0' | '1' | '2' | '3' | '4' | '5' 
-      | '6' | '7' | '8' | '9'
-      ;
-```
-
----
-
-## １桁整数の構文解析器
+## 一桁整数のANTLR定義ファイル（概略）
 
 ```
 grammar Digit; //ファイル名と一致させる
-//規則名 returns [型 名前]
-   : ... | ... | ... ;
+
 digit returns [int value] // int 型の value を返す
    : n=DIGIT {$value = Integer.parseInt($n.getText());} EOF
+   ;
       
 //トークンの定義
-DIGIT : '0' | '1' | '2' | '3' | '4' | '5' 
-      | '6' | '7' | '8' | '9'
+DIGIT : EOF
       ;
 ```
 
@@ -293,7 +288,7 @@ v
 ```
 
 ```
-if ( hoge < 100 ) { println ( hoge ) ; }
+[if] [(] [hoge] [<] [100] [)] [{] [println] [(] [hoge] [)] [;] [}]
 ```
 
 ---
@@ -304,11 +299,14 @@ if ( hoge < 100 ) { println ( hoge ) ; }
 
 ## ハンズオンのための準備
 
-1. [リポジトリをclone](https://github.com/kmizu/parser_study_stub)
-2. 構文解析器のファイルを編集
-  - `src/main/antlr4/com/github/kmizu/parser_study/Digit.g4` ファイルを編集
-3. テストを実行
-  - `mvn test`
+- 構文解析器のファイルを編集
+
+```
+src/main/antlr4/com/github/kmizu/parser_study/Digit.g4
+```
+
+- テストを実行
+  - `mvn test -Dtest=DigitParserTest`
 
 ---
 
@@ -343,23 +341,23 @@ digitRest = '0' | '1' | '2' | '3'| '4' | '5' | '6'
 
 ---
 
-## 整数の構文解析器
+## 整数のANTLR定義ファイル（概略）
 
 - 大文字で始まるのはトークンの定義
 
 ```
 grammar Integer;
 
-integer: ??? EOF;
+integer: EOF;
 
 integer returns [int value]
    : n=INTEGER {$value = Integer.parseInt($n.getText());}
    ;
 
-INTEGER : ???;
-fragment Zero : ???;
-fragment DigitFirst : ??? ;
-fragment DigitRest: ??? ;
+INTEGER : EOF;
+fragment Zero : EOF; 
+fragment DigitFirst : EOF;
+fragment DigitRest: EOF;
 ```
 
 ---
@@ -370,12 +368,14 @@ fragment DigitRest: ??? ;
 
 ## ハンズオンのための準備
 
-1. 構文解析器のリポジトリをclone
-  - さっきやった
-2. 構文解析器のファイルを編集
-  - `src/main/antlr4/com/github/kmizu/parser_study/Integer.g4` ファイルを編集
-3. テストを実行
-  - `mvn test`
+- 構文解析器のファイルを編集
+
+```
+src/main/antlr4/com/github/kmizu/parser_study/Integer.g4
+```
+
+- テストを実行
+  - `mvn test -Dtest=IntegerParserTest`
 
 ---
 
@@ -421,13 +421,14 @@ number : ...;
 
 ## ハンズオンのための準備
 
-1. 構文解析器のリポジトリをclone
-  - さっきやった
-2. 構文解析器のファイルを編集
-  - `src/main/antlr4/com/github/kmizu/parser_study/SimpleExpression.g4` ファイルを編集
-3. テストを実行
-  - `mvn test`
+- 構文解析器のファイルを編集
 
+```
+src/main/antlr4/com/github/kmizu/parser_study/SimpleExpression.g4
+```
+
+- テストを実行
+  - `mvn test -Dtest=SimpleExpressionParserTest`
 
 ---
 
@@ -441,9 +442,13 @@ number : ...;
 ```
 expression = additive;
 additive = multitive 
-           {'+' multitive | '-' multitive};
+           {'+' multitive 
+           | '-' multitive};
+       
 multitive = primary
-           {'*' primary | '/' primary};
+           {'*' primary 
+           | '/' primary};
+
 primary = '(' expression ')' | integer;
 ```
 
@@ -453,6 +458,7 @@ primary = '(' expression ')' | integer;
 
 - ANTLRは左再帰をサポート
   - 普通の再帰下降ではできない
+  - あくまでANTLRの特殊機能
 
 ```
 expression = additive;
@@ -467,17 +473,17 @@ primary = '(' expression ')' | integer;
 
 ---
 
-## 算術式の構文解析器
+## 算術式のANTLR定義ファイル（概略）
 
 ```
 grammar Arithmetic;
 
-expression : ??? ;
-additive : ??? ;
-multitive : ??? ;
-primary : ??? ;
+expression : EOF ;
+additive : EOF ;
+multitive : EOF ;
+primary : EOF ;
 number : NUMBER;
-NUMBER: ('0' | [1-9] [0-9]*); // no leading zeros
+NUMBER: ('0' | [1-9] [0-9]*);
 WS  :   [ \t\n\r]+ -> skip ;
 ```
 
@@ -489,12 +495,14 @@ WS  :   [ \t\n\r]+ -> skip ;
 
 ## ハンズオンのための準備
 
-1. 構文解析器のリポジトリをclone
-  - さっきやった
-2. 構文解析器のファイルを編集
-  - `src/main/antlr4/com/github/kmizu/parser_study/Arithmetic.g4` ファイルを編集
-3. テストを実行
-  - `mvn test`
+- 構文解析器のファイルを編集
+
+```
+src/main/antlr4/com/github/kmizu/parser_study/Arithmetic.g4
+```
+
+- テストを実行
+  - `mvn test -Dtest=ArithmeticParserTest`
 
 ---
 
@@ -514,30 +522,42 @@ WS  :   [ \t\n\r]+ -> skip ;
 ```
 jvalue = jobject | jarray | jboolean |
        | jnull | jstring | jnumber;
+       
 jobject = '{' 
   [jstring ':' jvalue {',' jstring ':' jvalue}]
 '}';
+
 jarray = '[' [jvalue {',' jvalue}] ']';
+
 jboolean = 'true' | 'false';
+
 jnull = 'null';
+
 jstring = '"' ... '"';
+
 jnumber = integer;
 ```
 
 ---
 
-## JSONの構文解析器
+## JSONのANTLR定義ファイル（概略）
 
 ```
 grammar Json;
 
 jvalue : jobject | jarray | jboolean |
        | jnull | jstring | jnumber;
+
 jobject = ??? ;
+
 jarray = ??? ;
+
 jboolean = ??? ;
+
 jnull = ??? ;
+
 jstring = '"' ... '"';
+
 jnumber = ??? ;
 ```
 
@@ -556,12 +576,14 @@ jnumber = ??? ;
 
 ## ハンズオンのための準備
 
-1. 構文解析器のリポジトリをclone
-  - さっきやった
-2. 構文解析器のファイルを編集
-  - `src/main/antlr4/com/github/kmizu/parser_study/Json.g4` ファイルを編集
-3. テストを実行
-  - `mvn test`
+- 構文解析器のファイルを編集
+
+```
+src/main/antlr4/com/github/kmizu/parser_study/Json.g4
+```
+
+- テストを実行
+  - `mvn test -Dtest=JsonParserTest`
 
 ---
 
