@@ -236,10 +236,15 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.Lexer;
 ...
 HelloWorldParser parser = new HelloWorldParser(
-    new CommonTokenStream(new HelloLexer(new ANTLRInputStream(new StringReader(input))));
+    new CommonTokenStream(
+        new HelloLexer(
+          new ANTLRInputStream(
+              new StringReader("Hello, World!")
+          )
+        ) 
+    )
 );
-parser.hello("Hello, World!").value; // パーズする
-parser.hello("Hello,").value; // 失敗する
+System.out.println(parser.hello.value); // パーズする
 ```
 
 ---
