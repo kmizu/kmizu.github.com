@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="ja">
+
+	<head>
+		<meta charset="utf-8">
+
+    <title>Haskell VS. Scala</title>
+
+		<meta name="description" content="Haskell VS. Scala">
+		<meta name="author" content="Kota Mizushima">
+
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/black.css" id="theme">
+<style type='text/css'>     
+  .reveal h1,               
+  .reveal h2,               
+  .reveal h3,               
+  .reveal h4,               
+  .reveal h5,               
+  .reveal h6 {              
+    text-transform: none;   
+  }                         
+</style>                    
+
+		<!-- Code syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+<div class='slides'>
+<section data-markdown data-separator='^\n---$'><script type='text/template'>
+
+## Haskell VS. Scala
+## ScalaMatsuri 2018
+## Kota Mizushima (DWANGO Co.,Ltd.)
+
+---
+
+### Who am I?
+- Twitter ID: [@kmizu](https://twitter.com/kmizu)
+- GitHub: [kmizu](https://github.com/kmizu)
+- Love: Scala/Rust/Nemerle/...
+- Parsing algorithm enthuasiast
+
+***
+
+Scalaと構文解析アルゴリズムが大好きなプログラマです
+
+---
+
+## Scala (1)
+
+- Designed by Martin Odersky in 2003
+  - A FP researcher
+- SCAlable LAnguage
+- Latest: Scala 2.12.4
+- Many industrial usages
+
+***
+
+- Martin Oderskyによって2003年に開発されました
+- 多くの実用例があります
+
+---
+
+## Scala (2)
+  
+- **Fusion** of OOP and FP
+  - Basically, Scala is OOPL
+  - Encode FPL constructs by OOPL
+- Interoperable with Java
+  - Scala can call Java and vice versa
+
+***
+
+- 関数型とオブジェクト指向の統合
+- Javaとの互換性を重視
+
+---
+
+## Haskell (1)
+
+- Designed by FP researchers in 1990
+  - Simon Peyton Jones, Philip Wadler, etc.
+- Standard of non-strict FPL
+- Latest: GHC 8.2.2 (GHC is defacto standard impl)
+- Some industrial usages
+
+***
+
+- 関数型言語の研究者によって開発されました
+- 非正格関数型プログラミング言語の標準
+
+---
+
+## Haskell (2)
+
+- A purely functional programming language
+  - No expressions have side effects
+- A non-strict language
+- Many advanced constructs related with types
+
+***
+
+- 純粋関数型プログラミング言語です
+- 非正格な言語です
+
+---
+
+## Before Comparation
+
+- Scala has one official impl
+  - by Lightbend
+- GHC is defacto standard of Haskell impl
+- Compare Lightbend Scala with Haskell (including GHC)
+
+***
+
+Lightbend ScalaとGHC込みのHaskellとの比較を行います
+
+---
+
+## An Example Haskell Program
+
+```haskell
+filter (\x -> length x >= 4) ["Haskell", "Scala", "SML", "OCaml"]
+["Haskell","Scala","OCaml"]
+-- filter is a function of Prelude
+-- [ ... ]: list literal
+-- (\x -> ...) is an anonymous function literal
+```
+
+- リストから長さが4以上の文字列のみを抽出します
+
+---
+
+## An Example Scala Program
+
+```scala
+println(List("Haskell", "Scala", "SML", "OCaml").filter{_.length >= 4})
+// => List(Haskell, Scala, OCaml)
+// _.length >= 4 is syntax sugar of x => x.length >= 4
+// filter is a collection's method
+// println is a pre-imported method
+```
+
+***
+
+- リストから長さが4以上の文字列のみを抽出します
+- `filter` はメソッドなので、リストの後ろに来ます
+
+---
+
+## Module System - Haskell
+
+- Basic functionalities are supported
+  - namespace
+  - import
+  - export
+- Weaker than other **modern** programming language
+  - module compositions are not supported
+- Complemented by other features
+  - existential types, type classes, etc.
+
+***
+
+- 基本的な機能はありますが、弱いです
+- 存在型や型クラスによって補完することはできます
+
+---
+
+## Module System - Scala (1)
+
+- Powerful and expressive
+- OO style is supported, of course
+- ML-style module system is also emulated
+  - signature, functor, abstract type, etc.
+
+***
+
+- (ML/OO)スタイルのモジュールのどちらも使えます
+
+---
+
+## Module System - Scala (2)
+
+```scala
+case class Rational(r: Int, d: Int) {
+  def +(that: Rational): Rational = ???
+  def -(that: Rational): Rational = ???
+  def *(that: Rational): Rational = ???
+  def /(that: Rational): Rational = ???
+}
+```
+
+***
+
+- オブジェクト指向スタイルのモジュール化です
+
+---
+
+## Module System - Scala (3)
+
+```scala
+object RationalM {
+  type Rational = (Int, Int)
+  def add(a: Rational, b: Rational): Rational = ???
+  def subtract(a: Rational, b: Rational): Rational = ???
+  def multiply(a: Rational, b: Rational): Rational = ???
+  def divide(a: Rational, b: Rational): Rational = ???
+}
+```
+
+***
+
+- MLスタイルのモジュール化です
+- `Rational` の実際の型を隠蔽することもできます
+
+---
+
+## Type Inference - Haskell (1)
+
+- Strong type inference
+  - extention of Hindley-Milner
+  - types of many terms can be inferred
+- Has not completeness
+
+***
+
+- Hindley-Milnerを拡張した強力な型推論を行います
+- 型推論の完全性はありません
+
+---
+
+## Type Inference - Haskell (2)
+
+```haskell
+module Main where
+
+myFoldLeft f z [] = z 
+myFoldLeft f z (x:xs) = 
+  myFoldLeft f (f z x) xs
+
+main :: IO ()
+main = do
+         let r = myFoldLeft (+) 0 [1, 2, 3]
+         putStrLn $ show r -- 6
+```
+
+---
+
+## Type Inference - Scala (1)
+
+- Very limited compared to Haskell
+- Only **local** type inference
+  - types of local variables / fields
+  - types of anonymous functions
+  - ...
+- Type of recursive methods cannot be infer
+
+***
+
+- Haskellと比較するとかなり制限されています
+- ローカルな型推論のみをサポートします
+
+---
+
+## Type Inference - Scala (2)
+
+```scala
+val x = 1 // val x: Int = 1
+val y = "FOO" // val y: String = "FOO"
+def add(x: Int, y: Int) = x + y
+/*
+def myFoldLeft(list)(z)(f) = list match {
+  case Nil => z
+  case x::xs => myFoldLeft(xs)(f(z, x))(f)
+} compile error */
+```
+
+---
+
+## Monadic Notation - Haskell
+
+- `do` notation is syntax sugar of monadic operations
+
+```haskell
+do
+  putStrLn "Hello, "
+  line <- getLine
+  putStrLn line
+```
+
+==>
+
+```haskell
+putStrLn "Hello, " >> (
+  getLine >>= (\line -> putStrLn line)
+)
+```
+
+***
+
+- モナドを用いた操作のシンタックスシュガーです
+
+---
+
+## Monadic Notation - Scala
+
+- `for` notation is syntax sugar of some method chains
+  - consists of `map`, `flatMap`, `filter`, etc.
+
+```scala
+for {
+  _ <- putStrLn("Hello, "
+  line <- getLine
+  _ <- putStrLn(line)
+} yield ()
+```
+
+***
+
+- メソッドチェインのシンタックスシュガーです
+- `do` に比べて少し冗長です
+
+---
+
+## Evaluation Strategy - Haskell (1)
+
+- Non-strict by default
+- Strict optionally
+  - if annotated or pragma is enabled
+
+***
+
+- 非正格がデフォルトです
+- 正格性注釈が付いている箇所等は正格になります
+
+---
+
+## Evaluation Strategy - Haskell (2)
+
+```haskell
+module Main where
+
+zeroDivision = div 1 0
+
+main :: IO ()
+main = do
+         let r = zeroDivision
+         putStrLn "Hello"
+```
+
+***
+
+`r` が使われていないのでエラーになりません
+
+---
+
+## Evaluation Strategy - Haskell (3)
+
+```haskell
+module Main where
+
+zeroDivision = div 1 0
+
+main :: IO ()
+main = do
+         let r = zeroDivision
+         putStrLn $ show r -- divide by zero
+```
+
+***
+
+`r` が使われるとエラーになります
+
+---
+
+## Evaluation Strategy - Haskell (4)
+
+```haskell
+{-# LANGUAGE Strict #-}
+
+module Main where
+
+zeroDivision = div 1 0
+
+main :: IO ()
+main = do
+         let r = zeroDivision -- divide by zero
+         putStrLn "Hello"
+
+```
+
+***
+
+- `r` が使われなくてもエラーになります
+- `Strict` はGHC拡張です
+
+---
+
+## Evaluation Strategy - Scala (1)
+
+- Strict by default
+- Non-strict optionally
+
+***
+
+- 正格がデフォルトです
+- 注釈が付いている引数の評価は遅延されます
+
+---
+
+## Evaluation Strategy - Scala (2)
+
+```scala
+def dontUseArg(x: => Int): Int = 1
+println(dontUseArg(1 / 0)) // 1
+println(1 / 0) // ArithmeticException
+```
+
+***
+
+- `=>` が付いた引数の評価が遅延されます
+
+---
+
+## Purity - Haskell
+
+- No terms don't have side effects
+  - except for intended unsafe functions
+
+***
+
+- どのような項も副作用を持ちません
+  - 意図されたunsafe系の関数を除く
+
+---
+
+## Purity - Scala
+
+- Any term can have side effects
+- Needless side effects is not recommended
+
+***
+
+- どのような項も副作用を持ち得ます
+- 不必要な副作用は推奨されません
+
+---
+
+## Type Classes - Haskell
+
+- Primitive features in Haskell
+- There is only one instance for specific type class
+
+***
+
+- ある型クラスのインスタンスはただ１つです
+
+---
+
+## Type Classes - Scala (1)
+
+- Encoded by `implicit parameters`
+  - a language feature for type classes in Scala
+- Many instances for specific type class may exist
+
+***
+
+- `implicit parameter` によってエンコードされます
+- ある型クラスのインスタンスは複数存在します
+
+---
+
+## Type Classes - Scala (2)
+
+```scala
+object BooleanMonoids {
+  implicit object ConjunctionMonoid extends Monoid[Boolean] {
+    val mempty: Boolean = true
+    def mappend(a: Boolean, b: Boolean): Boolean = a && b
+  }
+  implicit object DisjunctionMonoid extends Monoid[Boolean] {
+    val mempty: Boolean = false
+    def mappend(a: Boolean, b: Boolean): Boolean = a || b
+  }}
+{
+  import BooleanMonoids.ConjunctionMonoid ...
+}
+{
+  import BooleanMonoids.DisjunctionMonoid ...
+}
+```
+
+***
+
+- importによって使い分けることができます
+
+---
+
+## Record - Haskell
+
+- A Label is not qualified by namespace
+- Name conflict may occur
+  - `OverloadedRecordField` resolve this problem
+  - Other record libraries resolved this problem exists
+
+***
+
+- ラベルは名前空間を持ちません
+- 名前の衝突に注意する必要があります
+
+---
+
+## Record - Scala (1)
+
+- A field has its own namespace
+  - same as most OOPLs
+
+***
+
+- フィールド名は名前空間を持ちます
+  - ほとんどのOOPLと同じように
+
+---
+
+## Record - Scala (2)
+
+```scala
+case class Point2D(x: Int, y: Int)
+case class Point3D(x: Int, y: Int, z: Int)
+```
+
+***
+
+- `Point2D` と `Point3D` の `x` と `y` は別物です
+
+---
+
+## My Thoughts on Scala and Haskell
+
+- Scala is not lesser Haskell
+  - although some advanced functional Scala programmers think so
+- Scala has powerful module system
+- Haskell has powerful type system and type inference
+- Scala will be better if it steal 'good parts' of Haskell
+
+***
+
+- Scalaは劣化Haskellではありません
+
+</script></section>
+
+      </div>
+		</div>
+    
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+
+		<script>
+
+			// Full list of configuration options available at:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				transition: 'slide', // none/fade/slide/convex/concave/zoom
+
+				// Optional reveal.js plugins
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true },
+					{ src: 'plugin/notes/notes.js', async: true }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>
