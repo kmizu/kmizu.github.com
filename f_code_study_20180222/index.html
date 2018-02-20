@@ -190,6 +190,36 @@ p match {
 
 ---
 
+### PartialFunction (1)
+
+- 事前に「呼び出し可能かチェック可能」な関数
+- partial function（部分関数）という用語は不適切
+  - プログラミングにおける多くの関数は部分関数
+- `isDefinedAt(arg)`: チェック用メソッド
+
+
+---
+
+### PartialFunction (2)
+
+- `{ case ... }` 式から自動生成可能
+  - 期待型が `PartialFunction` の場合
+
+```
+val f: PartialFunction[Int, String] = {
+  case 1 => "One"
+  case 2 => "Two"
+}
+f.isDefinedAt(1) // true
+f.isDefinedAt(2) // true
+f.isDefinedAt(0) // false
+f(1) // One
+f(2) // Two
+f(0) // Exception
+```
+
+---
+
 ### Scalaの型システム (1) - 概要
 
 - Javaに類似した単一ルートを持つ階層構造
