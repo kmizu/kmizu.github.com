@@ -205,7 +205,7 @@ p match {
 - `{ case ... }` 式から自動生成可能
   - 期待型が `PartialFunction` の場合
 
-```
+```scala
 val f: PartialFunction[Int, String] = {
   case 1 => "One"
   case 2 => "Two"
@@ -219,6 +219,27 @@ f(0) // Exception
 ```
 
 ---
+
+### Pattern Matching Anonymous Function
+
+- 期待型が `FunctionN` の場合に適用される
+- `PartialFunction` と混同されがち
+
+```scala
+val f: Int => String = {
+  case 1 => "One"
+  case 2 => "Two"
+}
+```
+
+is translated to:
+
+```scala
+val f: Int => String = i => i match {
+  case 1 => "One"
+  case 2 => "Two"
+}
+```
 
 ### Scalaの型システム (1) - 概要
 
