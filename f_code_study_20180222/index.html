@@ -259,6 +259,7 @@ List(1, 2, 3).map { case n => n * 2 }
 
 ---
 
+
 ### Scalaの型システム (1) - 概要
 
 - Javaに類似した単一ルートを持つ階層構造
@@ -351,7 +352,77 @@ val f3: Any => String = f2 // NG
 
 ---
 
-## まとめ
+### 雑学 - 「関数」と「メソッド」
+
+- かなり用法が混乱しているので注意！
+- わかりやすい理解
+  - 「関数」は `FunctionN` を継承したクラスのオブジェクト
+  - 「関数」はファーストクラスオブジェクト
+  - 「メソッド」は `def` によって定義されるもの全て
+  - 「メソッド」はファーストクラスオブジェクトではない
+- 「関数」と「メソッド」は型が違う
+  - 「関数」は `FunctionN` 型を持つ
+  - 「メソッド」は、method type (SLS) を持つ
+
+---
+
+### 雑学 - 「式」と「文」
+
+- 全ての式は評価が成功すると値を返す
+- 文はそれ自体は値を持たない
+- Scalaの制御構文はほぼ全て式
+　- `{}`, `while`, `for`, etc.
+- 変数宣言、クラス宣言等は文
+
+---
+
+### 雑学 - メソッド宣言の誤った解釈
+
+- メソッド宣言には本来 {} を伴う
+- が、本体が単一式の場合 {} を省略できる
+
+```scala
+def add1(x: Int, y: Int):Int = x + y
+def add2(x: Int, y: Int):Int = {
+  val r = x + y
+  println(r)
+  r
+}
+```
+
+---
+
+### 雑学 - メソッド宣言の正しい解釈
+
+- メソッド宣言（の本体）は `= 式` という形式
+- `{}` 式は、要素の式を順番に評価して最後の値を返す
+- 複数の式を並べるために `{}` 式がある
+  - Lispの `progn`
+  - Schemeの `begin`
+
+---
+
+### 雑学 - 不変と読み取り専用
+
+- `scala.collection` は読み取り専用コレクションを提供
+- `scala.collection.immutable` は不変コレクションを提供
+
+```scala
+import scala.collection.immutable
+import scala.collection.mutable
+
+val a: mutable.Buffer[Int] = mutable.Buffer(1, 2, 3)
+val b: collection.Seq[Int] = a // OK
+a(0) = 4
+b // ArrayBuffer(4, 2, 3)
+val c: immutable.Seq[Int] = a // NG
+```
+ 
+
+---
+
+
+### まとめ
 
 - Scalaの基礎を復習した
   - apply / unapply
@@ -360,6 +431,7 @@ val f3: Any => String = f2 // NG
     - `PartialFunction`
     - pattern matching anonymous function
   - Scalaの型システム基礎
+  - その他雑多な事柄
 
 時間余ってるので、色々質問受け付けます
 
