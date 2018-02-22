@@ -243,6 +243,22 @@ val f: Int => String = i => i match {
 
 ---
 
+### collect と map
+
+- `collect`は `PartialFunction` を引数に取る
+- `map` は `Function1` を引数に取る
+
+```scala
+List(1, 2, 3).collect{ case n if n >= 2 => n * 2 }
+// List(4, 6)
+List(1, 2, 3).map { case n if n >= 2 => n * 2 }
+// scala.MatchError: 1 (of class java.lang.Integer)
+List(1, 2, 3).map { case n => n * 2 }
+// List(2, 4, 6)
+```
+
+---
+
 ### Scalaの型システム (1) - 概要
 
 - Javaに類似した単一ルートを持つ階層構造
@@ -340,9 +356,12 @@ val f3: Any => String = f2 // NG
 - Scalaの基礎を復習した
   - apply / unapply
   - case classes
-  - Scalaの型システム
-  - ,etc.
-- わからないことがあったらSlackで遠慮なく質問を！
+  - `{ case ... }` の意味
+    - `PartialFunction`
+    - pattern matching anonymous function
+  - Scalaの型システム基礎
+
+時間余ってるので、色々質問受け付けます
 
 </script></section>
 
