@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="ja">
+
+	<head>
+		<meta charset="utf-8">
+
+    <title>はじめに</title>
+
+		<meta name="description" content="Scalaに関する神話と真実">
+		<meta name="author" content="水島宏太">
+
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/black.css" id="theme">
+<style type='text/css'>     
+  .reveal h1,               
+  .reveal h2,               
+  .reveal h3,               
+  .reveal h4,               
+  .reveal h5,               
+  .reveal h6 {              
+    text-transform: none;   
+  }                         
+</style>                    
+
+		<!-- Code syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+<div class='slides'>
+<section data-markdown data-separator='^\n---$'><script type='text/template'>
+
+## Scalaに関する神話と真実
+## ScalaMatsuri 2018
+## 株式会社ドワンゴ　水島宏太
+
+---
+
+### 自己紹介
+
+- Twitter ID: [@kmizu](https://twitter.com/kmizu)
+- GitHub: [kmizu](https://github.com/kmizu)
+- Love: Nemerle/Rust/Standard ML/Scala/...
+- 自分のプログラミング言語も作ってます
+  - [Klassic](https://github.com/klassic/klassic)
+- Japan Scala Association代表理事
+- 株式会社エフ・コード技術顧問
+
+---
+
+### Scalaに関する神話（あるいは真実）
+
+- Scalaって使われてるの？
+- Scalaは難しすぎて実用にならない？
+- Scalaを使うには関数型プログラミングの知識が必要？
+- Scalaは記号メソッドが濫用されている？
+- Scalaは遅い？
+- Scalaはコンパイルが遅い？
+- , etc.
+
+---
+
+### 導入するための心理的障壁を下げたい
+
+---
+
+### Q. Scalaって使われてるの？
+### A. 世界中で使われてます
+
+#### Scala採用企業（海外）
+
+* Twitter, Starbucks, Verizon, Goldman Sachs,
+  Foursquare, MorganStanley, etc.
+
+#### Scala採用企業（国内）
+
+* ドワンゴ, はてな, サイバーエージェント, ヌーラボ, エフ・コード,
+  セプテーニオリジナル, Maverick, DMM.com, ビズリーチ, etc.
+
+---
+
+## IEEE Spectrum The Top Programming Languages 2017
+
+[![](IEEESpectrum2017.png)](http://spectrum.ieee.org/static/interactive-the-top-programming-languages-2017)
+
+---
+
+### Q. Scalaは難しい？
+### A. はい。しかし…
+
+* トレーニングのための適切な資料と講師さえいれば育成することは十分可能
+  * 参考（１）： https://dwango.github.io/scala_text/
+  * 参考（２）： https://github.com/hatena/Hatena-Textbook
+* 弊社でも毎年、Scalaを使った新人研修を行っています
+
+---
+
+### Q. Scalaを使うには関数型プログラミングの知識が必要？
+### A. はい。ただし、高度な知識は必要はありません
+
+### 必要な知識・技能
+
+* Scalaの標準（不変）コレクションライブラリの使い方
+* 不変オブジェクトの作り方・活用方法
+
+---
+
+### Q. Scalaは記号メソッドが濫用されている？
+### A. そういうライブラリもあります。昔より濫用傾向は減っています
+
+* [昔のDispatch](http://www.flotsam.nl/dispatch-periodic-table.html)
+* [最近（？）のDispatch](https://dispatchhttp.org/Dispatch.html)
+
+適切にライブラリを選べば問題にはならない
+
+---
+
+### Q. Scalaは（Javaより）遅いのでは？
+### A. いいえ。ただし、プログラミングスタイルによります
+
+* ScalaのコードはJavaと同じようにコンパイルされる
+  * プリミティブ型を使ったコードにコンパイルされる
+* 同じスタイルで書けばほぼ同じ速度
+* 関数型プログラミングのスタイルで書いた場合、より遅くなる傾向
+* 性能と相談の上で適切なスタイルを
+  * 大抵は、設計を見直すべき
+
+---
+
+```java
+for(int i = 0; i < 100; i++) {
+  doSomething(i);
+}
+```
+
+（Java）の生成コードは
+
+```scala
+var i = 0
+while(i < 100) {
+  doSomething(i)
+  i += 1
+}
+```
+
+（Scala）の生成コードとほとんど同じ
+
+---
+
+## Java版のバイトコード
+
+```
+public static void main(java.lang.String[]);
+  Code:
+     0: iconst_0
+     1: istore_1
+     2: iload_1
+     3: bipush        100
+     5: if_icmpge     18
+     8: iload_1
+     9: invokestatic  #2
+    12: iinc          1, 1
+    15: goto          2
+    18: return
+```
+
+---
+
+## Scala版のバイトコード
+
+```
+public void main(java.lang.String[]);
+  Code:
+     0: iconst_0
+     1: istore_2
+     2: iload_2
+     3: bipush        100
+     5: if_icmpgt     20
+     8: aload_0
+     9: iload_2
+    10: invokevirtual #22
+    13: iload_2
+    14: iconst_1
+    15: iadd
+    16: istore_2
+    17: goto          2
+    20: return
+```
+
+---
+
+### Q. Scalaのコンパイルは遅い？
+### A. はい。ただし、大幅に和らげることができます
+
+* 金の弾丸
+  * ノートPC： Core i5以上
+  * デスクトップPC： Core i3以上
+  * メモリ： 16GB
+* sbtを立ち上げっぱなしにする
+* IntelliJ IDEAを利用の場合：
+  * sbt shellを使う(sbt 0.13.15以降)
+* Scala 2.12.4にバージョンを上げる
+  * **20%〜30%**のコンパイル時間削減
+
+---
+
+### Q. Scalaを使えるメンバーが居ないチームで採用して大丈夫？
+### A. １人は居た方がいい
+
+* Scala人材はあまり人材市場に出ていない
+* Scalaをできる人を最低１人雇って、社内で育成する必要
+
+---
+
+### Q. implicitという機能が怖い。どうすればいい？
+### A. 利用する上での規約を定めれば問題ない
+
+* 二つのimplicit
+  * implicit conversion
+  * implicit parameter
+* implicit conversionはあまり推奨されない
+* implicit parameterは積極的に使って良い
+
+---
+
+### Q. Scalaは後方互換性を軽視している？
+### A. いいえ
+
+* マイナーバージョンが変化しても互換性は維持
+  * Scala 2.11.x 〜 Scala 2.11.y の間で、互換性が維持
+    * xとyは任意のバージョン番号（マイナーバージョン）
+* メジャーバージョンが変わると互換性は維持されない
+  * Scala 2.a 〜 Scala 2.b の間で、互換性は維持されない
+    * aとbは任意のバージョン番号（メジャーバージョン）
+* クロスビルディングにより問題を軽減
+  * 単一ソースから複数のメジャーバージョン向けバイナリ生成
+
+---
+
+### Q. Scalaコミュニティって怖い人が多いんでしょ？
+### A. いいえ
+
+* 色々な人が気軽に質問に答えてくれます
+* 怖くないよ！
+
+* Gitter: [scalajp/public](https://gitter.im/scalajp/public)
+  * ガチな人もいっぱい居る（でも優しいよ！）
+* Slack:  [scala-jp](https://scala-jp.slack.com/)
+  * scalajpとは別の方が管理
+
+---
+
+### Q. sbtは難しいのでは？
+### A. はい。ただ、最初の一歩はむしろ簡単
+
+```scala
+organization := "foo.bar"
+name := "hoge"
+scalaVersion := "2.12.4"
+```
+
+これだけで始められる！
+
+* 既存プロジェクトのsbtの設定ファイルで学ぶ
+* sbt newで適当なプロジェクトを生成する
+
+---
+
+### まとめ
+
+* Scalaに関してよくある疑問に答えてみた
+* Scalaを使うかどうか、よく考えて決めてください
+
+---
+
+### 質問タイム
+
+* 質問の時間を多めに取りました
+* 色々質問してください
+
+</script></section>
+
+      </div>
+		</div>
+    
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+
+		<script>
+
+			// Full list of configuration options available at:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				transition: 'slide', // none/fade/slide/convex/concave/zoom
+
+				// Optional reveal.js plugins
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true },
+					{ src: 'plugin/notes/notes.js', async: true }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>
