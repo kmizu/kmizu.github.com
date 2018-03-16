@@ -173,7 +173,7 @@ println(List("Haskell", "Scala", "SML", "OCaml").filter{_.length >= 4})
 
 ---
 
-## Module System - Haskell
+## Module System - Haskell (1)
 
 - Basic functionalities are supported
   - namespace
@@ -186,8 +186,55 @@ println(List("Haskell", "Scala", "SML", "OCaml").filter{_.length >= 4})
 
 ***
 
-- 基本的な機能はありますが、弱いです
-- 存在型や型クラスによって補完することはできます
+- 基本的な機能はあります
+- 存在型や型クラスによって補完することができます
+
+---
+
+## Module System - Haskell (2)
+
+```haskell
+module MyRational 
+  (MyRational, myRational, myDenominator, myNumerator) where
+
+data MyRational = R Integer Integer
+
+myRational :: Integer -> Integer -> MyRational
+myRational n d = R n d
+
+myDenominator :: MyRational -> Integer
+myDenominator (R _ d) = d
+
+myNumerator :: MyRational -> Integer
+myNumerator (R n _) = n
+```
+
+***
+
+- `module` でモジュールを定義します
+- `R` を export していないのがポイントです
+
+---
+
+## Module System - Haskell (3)
+
+```haskell
+module Main where
+import MyRational
+
+r :: MyRational
+r = myRational 1 2
+
+main :: IO ()
+main = do
+         putStrLn $ show $ myDenominator r
+         putStrLn $ show $ myNumerator r
+```
+
+***
+
+- `import` でメンバを取り込みます
+- `MyRational` の実際の表現を隠蔽できます
 
 ---
 
@@ -237,6 +284,28 @@ object RationalM {
 
 - MLスタイルのモジュール化です
 - `Rational` の実際の型を隠蔽することもできます
+
+---
+
+## Module System - Scala (4)
+
+```scala
+trait StackSig {
+  type Stack[E]
+  def empty[E]: Stack[E]
+  def push[E](s: Stack[E], e: E): Stack[E] = ???
+  def pop[E](s: Stack[E]): Stack[E] = ???
+  def top[E](s: Stack[E]): E = ???
+}
+class StackUser(stack: StackSig) {
+  import stack._
+  top(push(push(empty[Int], 1), 2)) // 2
+}
+```
+
+***
+
+- MLスタイルのfunctorをエミュレート可能です
 
 ---
 
