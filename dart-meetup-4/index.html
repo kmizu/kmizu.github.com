@@ -113,7 +113,8 @@ object Calculator extends SCombinator[Int] {
     $("/").map { op => (lhs: Int, rhs: Int) => lhs / rhs }
   })
   def P: Parser[Int] = rule {
-    (for { _ <- string("("); e <- E; _ <- string(")")} yield e) | number
+    (for { _ <- string("("); e <- E; _ <- string(")")} yield e) | 
+    number
   }
   def number: P[Int] = rule(set('0'to'9').+.map{_.mkString.toInt})
 }
@@ -151,7 +152,9 @@ Parser<int> multitive() => rule(
 );
 Parser<int> primary() => rule(
   () => number() 
-| (s('(').then(expression()).then(s(')'))).map((t) => t.item1.item2)
+| (s('(').then(expression()).then(s(')'))).map((t) => 
+    t.item1.item2
+  )
 );
 ```
 
@@ -204,13 +207,15 @@ class ParseSuccess<T> extends ParseResult<T> {
   T value;
   ParseSuccess(this.value, String next) : super(next);
   @override bool get successful => true;
-  @override String toString() => 'ParseSuccess(${value}, ${next})';
+  @override String toString() => 
+    'ParseSuccess(${value}, ${next})';
 }
 class ParseFailure<T> extends ParseResult<T> {
   T value = null;
   ParseFailure(String next) : super(next);
   @override bool get successful => false;
-  @override String toString() => 'ParseFailure(${next})';
+  @override String toString() => 
+    'ParseFailure(${next})';
 }
 ```
 
@@ -226,7 +231,8 @@ typedef U BiFunction<T1, T2, U>(T1 t1, T2 t2);
 Parser<T> rule<T>(Parser<T> body()) => parserOf((input) =>
   body()(input)
 );
-Parser<T> parserOf<T>(ParserFunction<T> fun) => new Parser<T>(fun);
+Parser<T> parserOf<T>(ParserFunction<T> fun) => 
+  new Parser<T>(fun);
 ```
 
 ---
@@ -249,7 +255,9 @@ Parser<T> parserOf<T>(ParserFunction<T> fun) => new Parser<T>(fun);
 ```dart
 Parser<String> s(String literal) => parserOf((input) =>
   input.startsWith(literal) ? 
-    new ParseSuccess<String>(literal, input.substring(literal.length)) : 
+    new ParseSuccess<String>(literal, 
+      input.substring(literal.length)
+    ) : 
     new ParseFailure<String>(input)
 );
 ```
@@ -266,7 +274,8 @@ Parser<Pair<T, U>> then<U>(Parser<U> that) => parserOf(
     var r1 = this.fun(input);
     if(r1.successful) {
       var r2 = that.fun(r1.next);
-      return r2.successful ?  new ParseSuccess ... : new ParseFailure ... ;
+      return r2.successful ?  new ParseSuccess ... : 
+                              new ParseFailure ... ;
     } else {
       return new ParseFailure<Pair<T, U>>(input);
     }
