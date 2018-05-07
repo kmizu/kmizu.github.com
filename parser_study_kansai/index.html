@@ -263,13 +263,13 @@ public int digit() {
 
 ## ハンズオンのための準備
 
-1. [リポジトリをclone](https://github.com/kmizu/parser_hands_on)
+1. [リポジトリをclone](https://github.com/kmizu/parser_hands_on_kansai)
 2. コンパイルできることを確認
   - `$ mvn compile`
 3. 構文解析器のファイルを作成
   - `MyDigitParser.java`
-    - `com.github.kmizu.parser_hands_on.my_parser` パッケージを作成
-  - `com.github.kmizu.parser_hands_on.digit.AbstractDigitParser` を継承
+    - `com.github.kmizu.parser_hands_on_kansai.my_parser` パッケージを作成
+  - `com.github.kmizu.parser_hands_on_kansai.digit.AbstractDigitParser` を継承
 4. 自分の構文解析器をテストするように書き換える
   - `src/test/java` 下にある `MyDigitParserTest.java`
 5. テストを実行
@@ -293,12 +293,12 @@ public int digit() {
 
 ### `MyDigitParser` の場合
 
-1. `src/test/java/com/github/kmizu/parser_hands_on/answer` に移動
+1. `src/test/java/com/github/kmizu/parser_hands_on_kansai/answer` に移動
 2. `MyDigitParserTest.java` を開く
 3. import宣言を加える
 
 ```java
-import com.github.kmizu.parser_hands_on.my_parser.MyDigitParser;
+import com.github.kmizu.parser_hands_on_kansai.my_parser.MyDigitParser;
 ```
 
 4. `mvn test` を実行 --> テストが失敗することを確認
@@ -354,7 +354,7 @@ int integer() {
 
 1. 構文解析器のファイルを作成
   - `MyIntegerParser.java`
-  - `com.github.kmizu.parser_hands_on.integer.AbstractIntegerParser` を継承
+  - `com.github.kmizu.parser_hands_on_kansai.integer.AbstractIntegerParser` を継承
 4. 自分の構文解析器をテストするように書き換える
   - `src/test/java` 下にある `MyIntegerParserTest.java`
 5. テストを実行
@@ -406,7 +406,7 @@ LimitedExpressionNode expression() {
 
 1. 構文解析器のファイルを作成
   - `MyLimitedExpressionParser.java`
-  - `com.github.kmizu.parser_hands_on.limited_expression.AbstractLimitedExpressionParser`
+  - `com.github.kmizu.parser_hands_on_kansai.limited_expression.AbstractLimitedExpressionParser`
     を継承
 4. 自分の構文解析器をテストするように書き換える
   - `src/test/java` 下にある `MyLimitedExpressionParserTest.java`
@@ -443,7 +443,7 @@ primary = '(' expression ')' | integer;
 4. 自分の構文解析器をテストするように書き換える
   - `src/test/java` 下にある `MyExpressionParserTest.java`
 5. テストを実行
-6. `com.github.kmizu.parser_hands_on.expression.ExpressionNode` 
+6. `com.github.kmizu.parser_hands_on_kansai.expression.ExpressionNode` 
   のサブクラスのインスタンスを返すようにする
 
 ---
@@ -482,7 +482,7 @@ primary = '(' expression ')' | character;
 
 1. 構文解析器のファイルを作成
   - `MyRegularExpressionParser.java`
-  - `com.github.kmizu.parser_hands_on.regular_expression.AbstractRegularExpressionParser`
+  - `com.github.kmizu.parser_hands_on_kansai.regular_expression.AbstractRegularExpressionParser`
 4. 自分の構文解析器をテストするように書き換える
   - `src/test/java` 下にある `MyRegularExpressionParserTest.java`
 5. テストを実行
@@ -527,7 +527,7 @@ jnumber = integer;
 
 1. 構文解析器のファイルを作成
   - `MyJSONParser.java`
-  - `com.github.kmizu.parser_hands_on.json.AbstractJSONParser` を継承
+  - `com.github.kmizu.parser_hands_on_kansai.json.AbstractJSONParser` を継承
 4. 自分の構文解析器をテストするように書き換える
   - `src/test/java` 下にある `MyJSONParserTest.java`
 5. テストを実行
