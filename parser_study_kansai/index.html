@@ -550,6 +550,112 @@ jnumber = integer;
 
 ---
 
+## JSONの構文解析器
+
+```java
+// jvalue = jobject
+//        | jarray
+//        | jnull
+//        | jboolean
+//        | jnumber
+//        | jstring
+public JSONNode jvalue() {
+    try {
+        save();
+        return jobject();
+    } catch (ParseFailure e1) {
+        restore();;
+    }
+
+    try {
+        save();
+        return jarray();
+    } catch (ParseFailure e2) {
+        restore();
+    }
+
+    try {
+        save();
+        return jnull();
+    } catch (ParseFailure e3) {
+        restore();
+    }
+
+    try {
+        save();
+        return jboolean();
+    } catch (ParseFailure e4) {
+        restore();
+    }
+
+    try {
+        save();
+        return jnumber();
+    } catch (ParseFailure e5) {
+        restore();
+        return jstring();
+    }
+}
+
+public JSONNode.JSONObject jobject() {
+    accept('{');
+    Map<String, JSONNode> properties = new HashMap<>();
+    try {
+        String fkey = jstring().value;
+        accept(':');
+        JSONNode fvalue = jvalue();
+        properties.put(fkey, fvalue);
+    } catch(ParseFailure e) {
+        accept('}');
+        return new JSONNode.JSONObject(properties);
+    }
+    while(true) {
+        int current = position;
+        try {
+            accept(',');
+            String key = jstring().value;
+            accept(':');
+            JSONNode value = jvalue();
+            properties.put(key, value);
+        } catch (ParseFailure e) {
+            position = current;
+            break;
+        }
+    }
+    accept('}');
+    return new JSONNode.JSONObject(properties);
+}
+
+public JSONNode.JSONString jstring() {
+    StringBuilder content = 
+      new StringBuilder();
+    accept('"');
+    while(true) {
+        int current = position;
+        try {
+            accept('\\');
+            char code = accept();
+            code = escapeSequence(code);
+            content.append(code);
+        } catch (ParseFailure e1) {
+            position = current;
+            try {
+                char code = acceptExcept('"');
+                content.append(code);
+            } catch (ParseFailure e2) {
+                break;
+            }
+        }
+    }
+    accept('"');
+    return new JSONNode.JSONString(
+      new String(content)
+    );
+}
+```
+
+---
+
 # ハンズオンタイム
 
 ---
