@@ -429,6 +429,31 @@ primary = '(' expression ')' | integer;
 
 ---
 
+## 算術式の構文解析器
+
+```
+public ExpressionNode expression() {
+    return additive();
+}
+public ExpressionNode additive() {
+    ExpressionNode result = multitive();
+    while(true) {
+        save();
+        try {
+            accept('+');
+            result = new ExpressionNode.Addition(
+                result, multitive()
+            );
+        } catch (ParseFailure e1) {
+            restore();
+            ...
+        }
+    }
+}
+```
+
+---
+
 # ハンズオンタイム
 
 ---
