@@ -446,6 +446,15 @@ public ExpressionNode additive() {
             );
         } catch (ParseFailure e1) {
             restore();
+            try {
+                // '-' multitive
+                accept('-');
+                result = new ExpressionNode.Subtraction(
+                    result, multitive()
+                );
+            } catch (ParseFailure e2) {
+                return result;
+            }
             ...
         }
     }
