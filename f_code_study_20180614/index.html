@@ -118,7 +118,7 @@ val idg = [T](x:T) => T // NG
   - 型を考慮しない
 - `()` がネストした式の中で使うと予想しない変換も
 - 単純な式の中でのみ使うようにしよう
-  - `List(1, 2, 3).filer(_ < 3)` など
+  - `List(1, 2, 3).filter(_ < 3)` など
   - メソッドチェインの中で使うのは問題ない
 
 ---
@@ -168,6 +168,238 @@ List(1).map(((1).+(_)).+(3))
 - `"A".charAt(_)` はプレースホルダ構文のつもり
   - 実際には、`"A".charAt _` として解釈される
   - 理由は不明
+
+---
+
+### Procedure Syntaxを使ってはいけない
+
+```scala
+def puts(s: String) {
+  println(s)
+}
+```
+
+- `Unit` を返すメソッドとして解釈される
+- 返り値を返したつもりが `Unit` が返ってくるという罠
+- 昔の（設計者の）過ち
+  - Scala 2.13のマイルストーンでdeprecatedに
+  - Dotty(Scala3)ではそもそも使えない
+
+---
+
+### パターンマッチの大文字小文字に気をつける
+
+- パターンマッチのパターン部では、大文字小文字の扱いが違う
+- 大文字で始まるのはパターン名、あるいは値
+- 小文字で始まるのは変数パターン
+- 小文字で始まるのをパターン名として扱うには、バッククオートで囲む
+
+---
+
+### パターンマッチの大文字小文字に気をつける（例）
+
+誤：
+
+```scala
+val classFileHeader = 0xCAFEBABE
+val header = 0XFFFFFFFF
+header match {
+  case classFileHeader => "success"  // => こちらが選ばれる
+  case _ => "error"
+}
+```
+
+---
+
+### パターンマッチの大文字小文字に気をつける（例）
+
+正：
+
+```scala
+val ClassFileHeader = 0xCAFEBABE
+val classFileHeader = 0xCAFEBABE
+val header = 0XFFFFFFFF
+header match {
+  case ClassFileHeader => "success" 
+  // case `classFileHeader` => "success" でも良い
+  case _ => "error" // => こちらが選ばれる
+}
+```
+
+---
+
+### 正規表現のパターンマッチに関する罠
+
+- 正規表現を `match` 式で使うと、完全一致になる
+- グルーピングの数とパターン引数の数があっているかも注意
+
+```
+val Digits = "([0-9]+)".r
+"12345" match {
+  case Digits(n) => n // => "12345"
+  case _ => 0
+}
+"abc123d" match {
+  case Digits(n) => n
+  case _ => 0 // => 0 // => 0
+}
+```
+
+---
+
+### 配列同士を `==` で比較してはいけない
+
+- 配列の `==` は Javaの配列の `==` が使われる
+- Javaの配列の `==` は identityに基づく比較を行う
+  - 同じ内容の配列が等しいと判定されない
+- 解決策：
+  - `List` や `Vector` 等、Scalaコレクションに変換して比較する
+  - `Arrays.deepEquals` を使う
+
+---
+
+### `Future(expr)` を `for` の中で使ってはいけない（１）
+
+誤：
+
+```scala
+val d = for {
+  a <- Future(someCompuationA())
+  b <- Future(someCompuationB())
+  c <- Future(someCompuationC())
+} yield a + b + c
+```
+
+- A, B, C が並行実行されない
+
+---
+
+### `Future(expr)` を `for` の中で使ってはいけない（２）
+
+正：
+
+```scala
+val a1 = Future(someCompuationA()) // someCompuationA()が非同期に実行開始される
+val b1 = Future(someCompuationB()) // someCompuationB()が非同期に実行開始される
+val c1 = Future(someCompuationC()) // someCompuationC()が非同期に実行開始される
+val d = for {
+  a <- a1
+  b <- b1
+  c <- c1
+} yield a + b + c
+```
+
+- A, B, C が並行実行される
+
+---
+
+### `Future(expr)` に関する私の考え
+
+- 設計ミスでは？
+- `Future(expr)` で生成した `Future` が即座に実行開始しない方が良かった
+
+---
+
+### 改行とブロックの組み合わせに注意
+
+```scala
+val f = foo()
+{
+  bar()
+}
+``` 
+
+は
+
+```scala
+val foo() { bar() }
+```
+
+と解釈される
+
+- 変数宣言とブロックの間には空行を入れよう
+
+---
+
+### Javaのメソッドの返り値に注意
+
+```scala
+val m = new java.util.HashMap[String, Int]
+m.put("foo", "bar")
+m.get("baz") + 1 // => NullPointerException
+```
+
+- `null` が **絶対に** 返ってこない場合以外は `Option`で包もう
+
+```scala
+val m = new java.util.HashMap[String, Int]
+m.put("foo, "bar")
+Option(m.get("baz")) + 1 // => コンパイルエラー
+```
+
+---
+
+### インナークラスのインスタンスに関する罠
+
+```scala
+class Outer {
+  class Inner
+  val I = new Inner
+}
+val outer = new Outer
+//val i: Outer.Inner = outer.I
+val i: Outer#Inner = outer.I
+```
+
+- `Outer.Inner` は `Outer` オブジェクトに所属する `Inner` の意味
+  - Scalaではクラスはオブジェクトに所属する（ことができる）
+- `Outer#Inner` で `Outer` クラスの中の `Inner` の意味になる
+
+---
+
+### 不変コレクションの使い分け（ `Seq` ）
+
+- `List` : 先頭への要素の追加・取り出し以外が遅い 
+  - 不適切な操作を行っていないと自信が持てる場合
+- `Vector` : だいたい何でもそれなりに早い
+  - `Vector` でだいたい事足りる場合が多い 
+- `Stream` : メモリリークの原因になりやすい
+  - メモ化したい場合を除き使うべきでない
+
+---
+
+### 不変コレクションの使いわけ（ `Map` )
+
+- `HashMap` : こちらの方が使いやすい
+  - 要素の順序が自明ではない場合にも使える
+- `TreeMap` : こっちの方が早い場合もあるかも
+  - 要素の順序が明確に定義できるなら、こっちもあり
+- この部分は異論があるかも
+
+---
+
+### 不変コレクションの使い分け（ `Set` ）
+
+- `HashMap` と  `HashSet` の関係とだいたい同じ
+  - `HashSet` 優先で、場合によって `TreeSet` も考慮
+
+---
+
+### デフォルトの `Seq` は不変ではない
+
+- `import` せずに使える `Seq` のこと
+- 以下が正常に実行できる
+
+```scala
+val seq: Seq[Int] = mutable.Buffer(1, 2, 3)
+seq: Seq[Int] = ArrayBuffer(1, 2, 3)
+```
+- 不変を明示するなら、以下のようにする
+
+```scala
+import scala.collection.immutable.Seq
+val seq: immutable.Seq[Int] = List(1, 2, 3)
+```
 
 ---
 
