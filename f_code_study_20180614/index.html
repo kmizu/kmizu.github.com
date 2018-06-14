@@ -403,9 +403,94 @@ val seq: immutable.Seq[Int] = List(1, 2, 3)
 
 ---
 
+### 型推論に注意
+
+- Scalaの型推論は **ややこしい**
+  - わかりにくいエラーメッセージに悩まされることも
+  - 罠にはまりにくいようにコードを書こう
+- 次のような点が絡む場合に要注意：
+  - オーバーローディング
+  - 関数の型の推論
+  - SAM conversion
+  - Unit型に関係する型変換
+  - ,etc.
+
+---
+
+### オーバーローディングとSAM conversion
+
+- 無名関数を対応するSAM typeに変換できる（Scala 2.12）
+  - SAM type: 抽象メソッド一つだけを持った型
+- 関数とSAM typeを受け取るメソッドをオーバーロードすると問題が発生
+
+```
+trait SAM { def run(x: Int): Int }
+object A {
+  def f(x: SAM): Int = x.run(2)
+  def f(x: Int => Int): Int = x(2)
+}
+A.f(x => x) // OK
+// A.f({ case x => x })
+// <console>:13: error: missing parameter type for expanded function
+// The argument types of an anonymous function must be fully known. (SLS 8.5)
+A.f(new SAM { def run(x: Int): Int = x }) // OK
+```
+
+---
+
+### Unit discardingの罠
+
+- Scalaでは、Unitが期待されている場合に勝手に `()` を補完することがある
+  - Unit discarding （正式名称だったか忘れた）
+
+```scala
+// fを呼び出すだけのメソッド
+def run(f: () => Unit): Unit = f()
+
+// println()はUnitを返すので意図通り
+run { () => println(1) }
+
+// {() => 1} が {() => 1; ()} になってしまう
+// この場合、警告は出る
+run { () => 1 }
+```
+
+---
+
+### 型推論と引数リストの罠
+
+- 多相メソッドで、単一の引数リストだと関数の型が推論できないことがある
+- 複数の引数リストを作って、関数の型を後に置くとうまく行く
+- 引数リストを単位とした型推論を行っているため
+- Dotty（Scala3）で解決されている
+
+```scala
+def map1[A, B](xs: List[A], f: A => B): List[B] = xs.map(f)
+// map1(List(1, 2, 3), (x) => x + 2)
+// error: missing parameter type
+// map1(List(1, 2, 3), (x) => x + 2)
+def map2[A, B](xs: List[A])(f: A => B): List[B] = xs.map(f)
+map2(List(1, 2, 3)){x => x + 2}  // OK
+```
+
+---
+
+### オーバーローディングと型推論の相性について
+
+- オーバーローディングは型推論を邪魔する
+- オーバーローディングと型推論を組み合わせるとわかりにくいエラーが発生
+- Scalaでオーバーローディングを使うメリットが少ない
+  - 型クラス（≒implicit parameter）でほとんど代用可能
+- オーバーロードされたメソッドを定義しないようにすべき
+
+---
+
 ### まとめ
 
-Scalaでよくハマる落とし穴について解説した
+- Scalaでよくハマる落とし穴について解説した
+- 罠にハマりにくいコーディングを心がけよう
+- ややこしい罠にハマったら遠慮なく @kmizu まで質問を！
+- 他にハマった罠についての疑問を受け付けます
 
 </script></section>
 
