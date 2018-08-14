@@ -212,9 +212,137 @@ val output = test1(2, 3)
 
 ---
 
+### SIの型チェック
+
+<img src="image/SI-Type-Checking.png" width="70%" height="20%">
+
+---
+
 ### SI to System F
 
-<img src="image/TransitionToSystemF.png" width="70%" height="70%">
+<img src="image/TranslationToSystemF.png" width="70%" height="70%">
+
+---
+
+### 例： Ordering
+
+```scala
+trait Ord[T] { def less: T => T => Boolean }
+implicit def __1: Ord[Int] = new Ord[Int] { 
+  def less: Int => Int => Boolean = x => y => x < y 
+}
+implicit def __2[T]: implicit Ord[T] => Ord[List[T]] = new Ord[List[T]] {
+  def less: List[T] => List[T] => Boolean = xs => ys =>
+    if ys.isEmpty then false else if xs.isEmpty then true
+    else if xs.head == ys.head then less(xs.tail)(ys.tail)
+    else isLess(xs.head)(ys.head)
+}
+def isLess[T]: T => T => implicit Ord[T] => Boolean =
+  x => y => implicitly[Ord[T]].less(x)(y)
+isLess(Nil)(List(1, 2, 3))
+isLess(List(List(1)))(List(List(1)))
+```
+
+---
+
+### 例： Propagation of Session Context（１）
+
+```scala
+case class Person(name: String)
+case class Paper(title: String, authors: List[Person], body: String)
+class ConfManagement(papers: List[Paper], realScore: Map[Paper, Int]) {
+  type Session[T] = implicit Person => T
+  def currentUser: Session[Person] = implicitly
+  def hasConflict(p: Person, ps: List[Person]) = ps contains p
+  def score: Paper => Session[Int] = paper =>
+  if hasConflict(currentUser, paper.authors) then -1
+  else realScore(paper)
+  def viewRankings: Session[List[Paper]] = papers.sortBy(score(_))
+}
+```
+
+### 例： Propagation of Session Context（２）
+
+```scala
+val bob = Person("Bob")
+val eve = Person("Eve")
+val p1 = Paper("Bob's paper", List(bob), "...")
+val p2 = Paper("Eve's paper", List(eve), "...")
+val cm = new ConfManagement(List(p1, p2), Map(p1 -> 4, p2 -> 3))
+implicit def __1: Person = bob
+cm.score(p1) // -1
+cm.score(p2) // 3
+```
+
+---
+
+### Builder DSL - 利用側
+
+```scala
+table {
+  row {
+    cell("top left")
+    cell("top right")
+  }
+  row {
+    cell("bottom left")
+    cell("bottom right")
+  }
+}
+```
+
+### Builder DSL - 脱糖後
+
+```scala
+table { $t: Table =>
+  row { $r: Row =>
+    cell("top left")($r)
+    cell("top right")($r)
+  }($t)
+  row { $r: Row =>
+    cell("bottom left")($r)
+    cell("bottom right")($r)
+  }($t)
+}
+```
+
+---
+
+### Builder DSL - 定義側
+
+```scala
+class Table {
+  val rows = new ArrayBuffer[Row]
+  def add(r: Row): Unit = rows += r
+  override def toString = rows.mkString("Table(", ", ", ")")
+}
+def table(init: implicit Table => Unit): Table = {
+  implicit val t = new Table
+  init
+  t
+}
+```
+
+---
+
+### 関連研究
+
+- Haskellのimplicit parameter
+- Agdaのinstance arguments
+- Coqのimplicit arguments
+- Implicit Calculus
+
+---
+
+### まとめ
+
+- 120のポピュラーなScalaプロジェクトがimplicitsを利用
+  - コンテキストを暗黙に渡す現実の需要が存在 
+- _implicit function type_ を本論文で提案
+  - プログラムでコンテキストを扱うためのパワフルな機能
+  - 形式化（SI）を提供
+  - デモンストレーション
+
 
 </script></section>
 
