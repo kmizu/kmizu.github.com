@@ -93,7 +93,7 @@
 
 ---
 
-### 導入（１）-- 依存性の表現
+### Introduction - 依存性の表現
 
 - プログラミングで重要な問題の一つに依存性の表現方法がある
   - テキストは、依存するコンテキストがあって初めて理解可能
@@ -104,7 +104,7 @@
 
 ---
 
-### 導入（２） -- FPにおける依存性
+### Introduction - FPにおける依存性
 
 - FPでは依存性は引数で表現される
   - 引数爆発の問題がある
@@ -113,7 +113,7 @@
 
 ---
 
-### 導入（３） -- Scalaにおける依存性
+### Introduction - Scalaにおける依存性
 
 - implicit parameterを使う
   - 型クラス、設定など
@@ -200,30 +200,6 @@ val output = test1(2, 3)
 
 ---
 
-### SIの抽象構文
-
-<img src="image/SI-Syntax.png">
-
----
-
-### SIの型付け規則
-
-<img src="image/SI-Typing-Rule.png">
-
----
-
-### SIの型チェック
-
-<img src="image/SI-Type-Checking.png" width="70%" height="20%">
-
----
-
-### SI to System F
-
-<img src="image/TranslationToSystemF.png" width="70%" height="70%">
-
----
-
 ### 例： Ordering
 
 ```scala
@@ -276,7 +252,7 @@ cm.score(p2) // 3
 
 ---
 
-### Builder DSL - 利用側
+### 例： Builder DSL - 利用側
 
 ```scala
 table {
@@ -291,7 +267,7 @@ table {
 }
 ```
 
-### Builder DSL - 脱糖後
+### 例： Builder DSL - 脱糖後
 
 ```scala
 table { $t: Table =>
@@ -308,7 +284,7 @@ table { $t: Table =>
 
 ---
 
-### Builder DSL - 定義側
+### 例： Builder DSL - 定義側
 
 ```scala
 class Table {
@@ -322,6 +298,30 @@ def table(init: implicit Table => Unit): Table = {
   t
 }
 ```
+
+---
+
+### SIの抽象構文
+
+<img src="image/SI-Syntax.png">
+
+---
+
+### SIの型付け規則
+
+<img src="image/SI-Typing-Rule.png">
+
+---
+
+### SIの型チェック
+
+<img src="image/SI-Type-Checking.png" width="70%" height="20%">
+
+---
+
+### SI to System F
+
+<img src="image/TranslationToSystemF.png" width="70%" height="70%">
 
 ---
 
