@@ -169,7 +169,8 @@ comp(1, 2)
 
 ### implicit parameter to implicit function type
 
-- `implicit Ord[T] => Boolean` ⇒
+- `implicit Ord[T] => Boolean` 
+↓
 - `(implicit ev: Ord[T]) => Boolean`
 
 ```scala
