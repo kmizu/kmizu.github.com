@@ -209,10 +209,10 @@ def add(x: Int): implicit Int => Int = x + y
 は以下のように書いても同じ
 
 ```scala
-def add(x: Int)(y: Int): Int = x + y
+def add(x: Int)(implicit y: Int): Int = x + y
 ```
 
-- ファーストクラスの型として持てる
+- ファーストクラスの型
   - 重複を避けられる
   - パラメタライズもできる
 
@@ -369,6 +369,14 @@ def table(init: implicit Table => Unit): Table = {
   - プログラムでコンテキストを扱うためのパワフルな機能
 - デモンストレーション
 - 形式化（SI）を提供
+
+---
+
+### おまけ
+
+Scalaエコシステムにおけるimplicitsの利用
+
+<img src="image/Usage-Of-Implicits.png">
 
 
 </script></section>
