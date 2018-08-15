@@ -125,7 +125,7 @@
 
 ---
 
-### implicit parameterからimplicit function typeへ（１）
+### implicit parameter to implicit function type
 
 - 普通の計算
 
@@ -137,7 +137,7 @@ add(2)(number)
 
 ---
 
-### implicit parameterからimplicit function typeへ（２）
+### implicit parameter to implicit function type
 
 - 単純なimplicit paramater
 
@@ -149,7 +149,7 @@ add(2)
 
 ---
 
-### implicit parameterからimplicit function tyueへ（３）
+### implicit parameter to implicit function tyue
 
 - 型クラスとしてのimplicit parameter
 
@@ -167,7 +167,7 @@ comp(1, 2)
 
 ---
 
-### implicit parameterからimplicit function typeへ（４）
+### implicit parameter to implicit function type
 
 - `implicit Ord[T] => Boolean` ⇒
 - `(implicit ev: Ord[T]) => Boolean`
@@ -180,7 +180,7 @@ def comp[T](x: T, y: T): implicit Ord[T] => Boolean = {
 
 ---
 
-### implicit parameterからimplicit function typeへ（５）
+### implicit parameter to implicit function type
 
 - `WithModule[T]` は `Int` 型の剰余算を計算するという文脈を表現
 
@@ -215,15 +215,6 @@ def add(x: Int)(y: Int): Int = x + y
 - ファーストクラスの型として持てる
   - 重複を避けられる
   - パラメタライズもできる
-
----
-
-### SI
-
-- implicit function typeを持った核計算SIを開発
-  - 形式化
-- SIの型チェック、System Fへの変換を定義
-- implicit parameterの解決が終わった後は普通のScala
 
 ---
 
@@ -328,6 +319,15 @@ def table(init: implicit Table => Unit): Table = {
 
 ---
 
+### SI
+
+- implicit function typeを持った核計算SIを開発
+  - 形式化
+- SIの抽象構文や型チェック、System Fへの変換を定義
+- implicit parameterの解決が終わった後は普通のScala
+
+---
+
 ### SIの抽象構文
 
 <img src="image/SI-Syntax.png">
@@ -367,8 +367,8 @@ def table(init: implicit Table => Unit): Table = {
   - コンテキストを暗黙に渡す現実の需要が存在 
 - _implicit function type_ を本論文で提案
   - プログラムでコンテキストを扱うためのパワフルな機能
-  - 形式化（SI）を提供
-  - デモンストレーション
+- デモンストレーション
+- 形式化（SI）を提供
 
 
 </script></section>
