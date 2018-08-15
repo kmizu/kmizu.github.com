@@ -139,7 +139,7 @@ add(2)(number)
 
 ### implicit parameterからimplicit function typeへ（２）
 
-- implicit paramaterを使う
+- 単純なimplicit paramater
 
 ```scala
 implicit val number: Int = 1
@@ -150,6 +150,8 @@ add(2)
 ---
 
 ### implicit parameterからimplicit function tyueへ（３）
+
+- 型クラスとしてのimplicit parameter
 
 ```scala
 trait Ord[T] {
@@ -167,6 +169,9 @@ comp(1, 2)
 
 ### implicit parameterからimplicit function typeへ（４）
 
+- `implicit Ord[T] => Boolean` ⇒
+- `(implicit ev: Ord[T]) => Boolean`
+
 ```scala
 def comp[T](x: T, y: T): implicit Ord[T] => Boolean = {
   implicitly[Ord[T]].compare(x, y)
@@ -176,6 +181,8 @@ def comp[T](x: T, y: T): implicit Ord[T] => Boolean = {
 ---
 
 ### implicit parameterからimplicit function typeへ（５）
+
+- `WithModule[T]` は `Int` 型の剰余算を計算するという文脈を表現
 
 ```scala
 case class Modulo[T](m: T)
