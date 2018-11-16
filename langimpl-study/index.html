@@ -73,11 +73,12 @@
 
 ### Onionの概要
 
+- URL: https://github.com/onion-lang/onion
 - 自作のプログラミング言語とその処理系（on JVM）
 - 静的型付きオブジェクト指向言語
 - JVMのクラスファイルを出力する
-- from 2005（学部3年）〜
-  - 数年前にJavaからScalaに移行
+- from 2004（学類（学部）3年）〜
+  - 数年前に実装言語をJavaからScalaに移行
 - 最近はほぼ更新停止
   - 気が向いたら手を加えたい
 
@@ -335,6 +336,153 @@ public:
 class A {}
 class B {}
 ```
+
+---
+
+### バイトコード生成
+
+- Javaバイトコードは静的型付きアセンブリ言語
+  - 型宣言とかはない
+  - 命令に型が埋め込まれたりオペランドスタックから推論されたり
+- クラスファイルは実行前に様々な制約を満たしていることをチェック
+  - オペランドスタックが壊れていないか
+  - 型的におかしな命令が発行されていないか
+  - オペランドスタックがあるPCで**常に同じサイズ**か
+  - 未初期化のローカル変数が使われていないか
+  - , etc.
+- 気をつけないとベリファイアにはねられるクラスファイルが生成される
+  - しかも、ベリファイアのメッセージは不親切
+- JVM Specを常に手元に置く必要が…
+
+---
+
+### バイトコード生成 - ベリファイアがエラーを吐く例
+
+- PC 2〜18まで（ループ本体）の全ての地点でループ毎にオペランドスタックのサイズが変わる
+  - あるPCにおけるオペランドスタックのサイズは不変でなければいけない
+
+```
+       0: iconst_0
+       1: istore_1
+       2: iload_1
+       3: bipush        10
+       5: if_icmpge     21
+       8: getstatic     #2   // Field java/lang/System.out:Ljava/io/PrintStream;
+      11: iload_1
+      12: invokevirtual #3   // Method java/io/PrintStream.println:(I)V
+      15: iinc          1, 1
+          bipush        0    // ループ毎にオペランドスタックに値を積む            
+      18: goto          2
+      21: return
+```
+
+---
+
+### バイトコード生成 - 作成過程で犯したミスの数々
+
+- インタフェース型に`invokevirtual`を発行
+- クラス型に`invokeinterface`を発行
+- 様々な（オペランドスタック上の）型エラー
+- スタックサイズ1の状態で`pop2`を発行してしまう
+- 不整合なオペランドスタックの状態を作ってしまう
+  - ループ毎に型が変わってたり
+- `checkcast`の発行し忘れ
+  - オペランドスタックのトップの型がおかしくなる
+- , etc.
+
+---
+
+### 無名関数（クロージャ）実装
+
+- キャプチャされる自由変数の取扱い以外は簡単
+  - 単に特定のクラスのオブジェクトに変換すればいい
+- 自由変数をどう扱うか
+  - JVMではローカル変数はメソッドを抜けると消える
+  - ヒープに確保する必要性
+  - 単純には、`class VarRef[A](var value: A)` みたいなの作ればいい
+- Onionの方針上の制約
+  - ×独自のクラスを使う（ランタイムフリーにするため）
+  - 💡そうだ、配列（`Object[]`）を使おう！
+
+---
+
+### 無名関数（クロージャ）実装
+
+```scala
+interface C { def call(): void; }
+def f(x: Int, y: Int): void {
+  c = #C.call { x = x + 1; y = y + 1; };
+  c.call;
+  System::out.println(x + y);
+}
+f(0, 0); // 2
+```
+
+---
+
+### 無名関数（クロージャ）実装
+
+```java
+interface C { void call(); }
+
+class AnonymousFunctionMain {
+  public void f(int x, int y) {
+    Object[] frame0 = new Object[3];
+    frame0[0] = x;
+    frame0[1] = y;
+    frame0[2] = new AnonymousFunctionMainClosure0(this, frame0);
+    ((AnonymousFunctionMainClosure0)frame0[2]).call();
+    System.out.println(
+      ((Integer)frame0[0]).intValue() + 
+      ((Integer)frame0[1]).intValue()
+    );
+  }
+  public void start(String[] args) {
+    f(0, 0);
+  }
+  public static void main(String[] args) {
+    new AnonymousFunctionMain().start();
+  }
+}
+
+class AnonymousFunctionMainClosure0 {
+  private Object outer$;
+  private Object[] frame1;
+
+  AnonymousFunctionMainClosure0(Object o, Object[] f) {
+    outer$ = o;
+    frame1 = f;
+  }
+  public void call() {
+    frame1[0] = ((Integer)frame1[0]).intValue() + 1;
+    frame1[1] = ((Integer)frame1[1]).intValue() + 1;
+    return;
+  }
+}
+```
+
+---
+
+### Onionの処理系実装で得られたもの（うろ覚え）
+
+- クラスファイル関連の知識
+  - フォーマット
+  - ベリファイア
+  - バイトコード
+- 割と大きな言語の実装をするのに必要な知識
+- その他色々
+
+---
+
+### Onionの今後
+
+- 現在は開発停止中
+- 気が向いたら今風の仕様に直したい
+  - セミコロン省略
+  - 文ではなく式
+  - ジェネリクス導入
+- 標準ライブラリの整備
+
 
 ---
 
