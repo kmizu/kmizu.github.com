@@ -4,7 +4,7 @@
 	<head>
 		<meta charset="utf-8">
 
-    <title>自作言語OnionとKlassicの実装</title>
+    <title>自作言語Onionの実装</title>
 
 		<meta name="description" content="Haskell VS. Scala">
 		<meta name="author" content="Kota Mizushima">
@@ -52,7 +52,7 @@
 <div class='slides'>
 <section data-markdown data-separator='^\n---$'><script type='text/template'>
 
-## 自作言語OnionとKlassicの実装
+## 自作言語Onionの実装
 ## 言語実装勉強会（2018/11/17）
 ## 構文解析友の会 水島宏太
 
@@ -65,6 +65,8 @@
 - 好きな言語: Scala,Nemerle,Racket, etc.
 - 構文解析（生成系）が大好き
 - プログラミング言語作りが趣味
+  - Onion <- Suspended
+  - Klassic <- Active
 - Japan Scala Association代表理事
 
 ---
@@ -200,6 +202,16 @@ System::out.println(add.call("A", "B")); // AB
 
 ---
 
+### Onion処理系の概要
+
+- 約7000行のScalaプログラム
+- JavaCCによる構文定義
+  - 約900行
+- Apache BCELでクラスファイル生成
+  - 今書き直すならASMだろう
+
+---
+
 ### Onion処理系の特徴
 
 - 独自のランタイムを持たない
@@ -211,6 +223,120 @@ System::out.println(add.call("A", "B")); // AB
 
 ---
 
+### Onion処理系の処理の流れ
+
+1. 字句解析（JavaCCから生成）
+2. 構文解析（JavaCCから生成）
+3. クラス名表の作成
+4. 継承関係とメンバの型の解決
+5. 委譲メソッドの生成
+6. 型チェック
+7. 中間表現への変換
+8. 中間表現からコード生成（with BCEL）
+
+---
+
+### 当時の苦労ポイント
+
+今ならなんてことはない
+
+- トップレベルの実装
+- バイトコード生成
+- 無名関数（クロージャ）実装
+
+---
+
+### トップレベルの実装 - Scala, Kotlin
+
+- トップレベルに評価可能な式（文）は書けない
+  - scalac/kotlincコマンド
+- 特別なコマンドで実行した場合、外側をクラスでラップしてコンパイル
+  - scala/kotlinコマンド
+
+---
+
+### トップレベルの実装 - Onion
+
+- トップレベル文が存在
+  - そのまま実行可能（onionコマンド）
+  - 明示的なコンパイルも可能（onioncコマンド）
+- トップレベルに宣言（クラス/インタフェース）も書ける
+- 両者を混ぜることもできる
+
+---
+
+### トップレベルの実装 - Onion
+
+- 宣言と文の混在をどう処理すべきか
+
+```scala
+class A {
+}
+println(new A);
+println(new B);
+class B {
+}
+```
+
+---
+
+### トップレベルの実装 - Onion
+
+トップレベル文
+
+1. エントリポイントを生成
+  - クラス： ファイル名-拡張子+Main
+    - e.g. `A.on` --> `AMain`
+  - メソッド： `start(args: String[])`
+2. トップレベル要素のリストをたどる
+3. トップレベル文のリストを作成
+4. エントリポイントにトップレベル文のリストを埋め込む
+5. mainメソッドを生成
+  - トップレベル用クラスのインスタンスを生成
+  - startメソッドの呼び出し
+
+---
+
+### トップレベルの実装 - Onion
+
+クラスとインタフェース
+
+普通に処理
+
+- 相互依存関係解決
+- 循環継承検出
+- , etc.
+
+---
+
+### トップレベルの実装 - Onion
+
+```scala
+// Foo.on
+class A {}
+println(new A);
+println(new B);
+class B {}
+```
+
+↓
+
+```scala
+class FooMain {
+public:
+  static main(args: String[]) {
+    (new FooMain).start(args);
+  }
+  start(args: String) {
+    println(new A);
+    println(new B);
+  }
+}
+class A {}
+class B {}
+```
+
+---
 
 </script></section>
 
