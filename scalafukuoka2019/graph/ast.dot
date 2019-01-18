@@ -1,0 +1,33 @@
+digraph CST {
+  subgraph cluster0 {
+    Raw [
+      label = "if (1 < 2) \"A\" else \"B\""
+    ]
+  }
+  subgraph cluster1 {
+    If [
+      label = "IF"
+    ]
+    Node0 [
+      label = "1"
+    ]
+    Node1 [
+      label = "<"
+    ]
+    Node2 [
+      label = "2"
+    ]
+    Node3 [
+      label = "\"A\""
+    ]
+    Node4 [
+      label = "\"B\""
+    ]
+    node [fontname = "Courier"];
+    If -> Node1;
+    If -> Node3;
+    If -> Node4;
+    Node1 -> Node0;
+    Node1 -> Node2;
+  }
+}

@@ -1,0 +1,3 @@
+[submodule "usparse"]
+	path = usparse
+	url = git@github.com:kmizu/usparse.git
