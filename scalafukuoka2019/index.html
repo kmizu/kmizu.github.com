@@ -379,15 +379,15 @@ def N: P[Any] = rule {
 ```scala
 def E: P[Int] = rule(A)
 def A: P[Int] = rule {
-  M ~ ($("+") ~ M | $("-") ~ M).* ^^ {case x ~ ys =>
+  (M ~ ($("+") ~ M | $("-") ~ M).*).map {case x ~ ys =>
     ys.foldLeft(x){ case (l, op ~ r) => if(op == "+") l + r else l -r } }
 }
 def M: P[Int] = rule {
-  P ~ ($("*") ~ P | $("/") ~ P).* ^^ { case x ~ ys =>
+  (P ~ ($("*") ~ P | $("/") ~ P).*).map { case x ~ ys =>
     ys.foldLeft(x) { case (l, op ~ r) => if (op == "*") l * r else l / r } }
 }
 def P: P[Int] = rule {
-  $("(") ~ E ~ $(")") ^^ { case _ ~ e ~ _ => e } | N
+  ($("(") ~ E ~ $(")")).map { case _ ~ e ~ _ => e } | N
 }
 def N: P[Int] = rule {
   ('0' to '9').map{c => $(c.toString).map(_.toInt)}.reduce((p1, p2) => p1 | p2)
@@ -663,18 +663,18 @@ final def rule[A](body: => Parser[A]): Parser[A] = {input =>
 ```scala
 def E: P[Int] = rule(A)
 def A: P[Int] = rule {
-  M ~ ($("+") ~ M | $("-") ~ M).* ^^ {case x ~ ys =>
+  (M ~ ($("+") ~ M | $("-") ~ M).*).map {case x ~ ys =>
     ys.foldLeft(x){ case (l, op ~ r) => if(op == "+") l + r else l -r } }
 }
 def M: P[Int] = rule {
-  P ~ ($("*") ~ P | $("/") ~ P).* ^^ { case x ~ ys =>
+  (P ~ ($("*") ~ P | $("/") ~ P).*).map { case x ~ ys =>
     ys.foldLeft(x) { case (l, op ~ r) => if (op == "*") l * r else l / r } }
 }
 def P: P[Int] = rule {
-  $("(") ~ E ~ $(")") ^^ { case _ ~ e ~ _ => e } | N
+  ($("(") ~ E ~ $(")")).map { case _ ~ e ~ _ => e } | N
 }
 def N: P[Int] = rule {
-  ('0' to '9').map{c => $(c.toString) ^^ (_.toInt)}.reduce((p1, p2) => p1 | p2)
+  ('0' to '9').map{c => $(c.toString).map(_.toInt)}.reduce((p1, p2) => p1 | p2)
 }
 ```
 
