@@ -172,9 +172,9 @@ Expression ::= "if" "(" Expression ")" "else" ...
 - 具象構文から、プログラムの解釈に不要な情報を削除したもの
 - 例：
   - `if`式は3つの式からなる（木が3つの子を持つ）
-    - cond式 
-    - then式
-    - else式
+    - `cond`式 
+    - `then`式
+    - `else`式
 
 ```
 Expression ::= IF (cond:Expression, then:Expression, else:Expression)
@@ -193,7 +193,7 @@ Expression ::= IF (cond:Expression, then:Expression, else:Expression)
 
 ### 型システム
 
-- 型がある言語における、型同士の互換性（など）に関する規則集
+- 型がある言語における、型同士の互換性に関する規則集
   - ちょっと語弊あり
 - 型がない言語では意味がない
   - 「いわゆる」動的型付き言語
@@ -258,10 +258,10 @@ val i2: Int = id(1)
 
 - どういう風に実行されるかを定義したもの
 - 例（カジュアルな言い方）：
-  - `1 + 1` は 1 + 1を計算した値（＝2）になる
-  - `1 - 2` は 1 - 2を計算した値（＝-1）になる
-  - `1 * 2` は 1 * 2を計算した値（＝2）になる
-  - `1 / 2` は 1 / 2を計算した値（＝0）になる
+  - `1 + 1` は 1 + 1を計算した値2になる
+  - `1 - 2` は 1 - 2を計算した値-1になる
+  - `1 * 2` は 1 * 2を計算した値2になる
+  - `1 / 2` は 1 / 2を計算した値0になる
 
 ---
 
@@ -342,20 +342,14 @@ def eval(tree: Tree): Int = tree match {
 
 ---
 
-### パーザとBNF
-
-- パーザを書く前にBNFを設計する（ことが多い）
-
----
-
-### 算術式 in 疑似BNF
+### 算術式 in BNF
 
 ```bnf
-Expression ::= Additive;
-Additive ::= Multitive ("+" Multitive | "-" Multitive)*;
-Multitive ::= Primary z("+" Primary | "-" Primary)*;
-Primary ::= "(" Expression ")" | Number;
-Nunber ::= "0" | [1-9]{[0-9]};
+E ::= A;
+A ::= M ("+" M | "-" M)*;
+M ::= P ("*" P | "/" P)*;
+P ::= "(" E ")" | N;
+N ::= [0-9];
 ```
 
 ---
@@ -363,20 +357,40 @@ Nunber ::= "0" | [1-9]{[0-9]};
 ### 算術式 in パーザコンビネータ
 
 ```scala
+def E: P[Any] = rule(A)
+def A: P[Any] = rule {
+  M ~ ($("+") ~ M | $("-") ~ M).*
+}
+def M: P[Any] = rule {
+  P ~ ($("*") ~ P | $("/") ~ P).*
+}
+def P: P[Any] = rule {
+  ($("(") ~ E ~ $(")")) | N
+}
+def N: P[Any] = rule {
+  ('0' to '9').map{c => $(c.toString)}.reduce((p1, p2) => p1 | p2)
+}
+```
+
+---
+
+### 算術式 in パーザコンビネータ（完全版）
+
+```scala
 def E: P[Int] = rule(A)
-def A: Parser[Int] = rule {
+def A: P[Int] = rule {
   M ~ ($("+") ~ M | $("-") ~ M).* ^^ {case x ~ ys =>
     ys.foldLeft(x){ case (l, op ~ r) => if(op == "+") l + r else l -r } }
 }
-def M: Parser[Int] = rule {
+def M: P[Int] = rule {
   P ~ ($("*") ~ P | $("/") ~ P).* ^^ { case x ~ ys =>
     ys.foldLeft(x) { case (l, op ~ r) => if (op == "*") l * r else l / r } }
 }
-def P: P[Int] = rule{
-  (for { _ <- $("("); e <- E; _ <- $(")")} yield e) | N
+def P: P[Int] = rule {
+  $("(") ~ E ~ $(")") ^^ { case _ ~ e ~ _ => e } | N
 }
 def N: P[Int] = rule {
-  ('0' to '9').map{c => $(c.toString) ^^ (_.toInt)}.reduce((p1, p2) => p1 | p2)
+  ('0' to '9').map{c => $(c.toString).map(_.toInt)}.reduce((p1, p2) => p1 | p2)
 }
 ```
 
@@ -400,7 +414,7 @@ new ~(new ~("A", "B"), "C") match {
 
 結果を格納するデータ型を代数的データ型で定義
 - 成功（Success）：`A`型の`value`と残りの文字列`next`
-- 失敗（Failure)：残りの文字列`next`
+- 失敗（Failure）：残りの文字列`next`
 
 ```scala
 sealed trait Result[+A] { def next: String }
@@ -450,16 +464,15 @@ type P[A] = Parser[A]
 ### 基本コンビネータの設計
 
 - 文字列リテラルの処理
+- `"Foo"` ≒ `$("Foo")`
 
 ```scala
 final def $(literal: String): Parser[String] = {input =>
-  if(literal.length > 0 && input.length == 0) {
-    Failure("")
-  } else if(input.startsWith(literal)) {
-    Success(literal, input.substring(literal.length))
-  } else {
+  if((literal.length > 0 && input.length == 0) || 
+      !input.startsWith(literal)) {
     Failure(input)
-  }
+  } else  {
+    Success(literal, input.substring(literal.length))
 }
 ```
 
@@ -468,7 +481,7 @@ final def $(literal: String): Parser[String] = {input =>
 ### 学べること
 
 - 文字列の簡単な扱い
-  - `lenght`, `substring`, `startsWith`
+  - `length`, `substring`, `startsWith`
 - 条件分岐
   - `if`
 - 無名関数の表記法
@@ -478,7 +491,7 @@ final def $(literal: String): Parser[String] = {input =>
 
 ### 派生コンビネータの設計
 
-- `Parser` にメソッドを生やす
+- `Parser[A]` にメソッドを生やす
 
 ```scala
 implicit class RichParser[A](val self: Parser[A]) {
@@ -501,6 +514,7 @@ implicit class RichParser[A](val self: Parser[A]) {
 ### 派生コンビネータの設計
 
 - 連接コンビネータ
+- `A B` ≒ `A ~ B`
 
 ```scala
 def ~[B](right: Parser[B]) : Parser[A ~ B] = {input =>
@@ -532,6 +546,7 @@ def ~[B](right: Parser[B]) : Parser[A ~ B] = {input =>
 ### 派生コンビネータの設計
 
 - 選択コンビネータ
+- `X | Y` ≒ `X | Y`
 
 ```scala
 def |[B >: A](rhs: Parser[B]): Parser[B] = {input =>
@@ -553,6 +568,7 @@ def |[B >: A](rhs: Parser[B]): Parser[B] = {input =>
 ### 派生コンビネータの設計
 
 - 繰り返しコンビネータ
+- `X*` ≒ `X.*`
 
 ```scala
 def * : Parser[List[A]] = {input: String =>
@@ -585,6 +601,7 @@ def * : Parser[List[A]] = {input: String =>
 ### 派生コンビネータの設計
 
 - 繰り返しコンビネータ（0回または1回）
+- `X?` ≒ `X.?`
 
 ```scala
 def ? : Parser[Option[A]] = {input =>
@@ -606,7 +623,8 @@ def ? : Parser[Option[A]] = {input =>
 ### 派生コンビネータの設計
 
 - 射影コンビネータ
-  - `for`式で使うためだけに定義
+- `(A ~ B).map {case x ~ y => x}`
+- `(A ~ B) ^^ {case x ~ y => x}`
 
 ```scala
 def map[B](function: A => B): Parser[B] = {input =>
@@ -616,14 +634,6 @@ def map[B](function: A => B): Parser[B] = {input =>
   }
 }
 def ^^[B](function: A => B): Parser[B] = map(function)
-def flatMap[B](function: A => Parser[B]): Parser[B] = {input =>
-  self(input) match {
-    case Success(value, next) =>
-      function(value)(next)
-    case failure@Failure(_) =>
-      failure
-  }
-}
 ```
 
 ---
@@ -631,6 +641,7 @@ def flatMap[B](function: A => Parser[B]): Parser[B] = {input =>
 ### 規則のためのメソッド
 
 - 単に遅延評価のためだけ
+- `def A: P[String] = rule { $("A") }`
 
 ```scala
 final def rule[A](body: => Parser[A]): Parser[A] = {input =>
@@ -643,7 +654,7 @@ final def rule[A](body: => Parser[A]): Parser[A] = {input =>
 ### 学べること
 
 - 名前呼び出し（by-name parameter）の使い方
-  - `=> Parser[A]`
+- `=> Parser[A]`
 
 ---
 
@@ -651,16 +662,16 @@ final def rule[A](body: => Parser[A]): Parser[A] = {input =>
 
 ```scala
 def E: P[Int] = rule(A)
-def A: Parser[Int] = rule {
+def A: P[Int] = rule {
   M ~ ($("+") ~ M | $("-") ~ M).* ^^ {case x ~ ys =>
     ys.foldLeft(x){ case (l, op ~ r) => if(op == "+") l + r else l -r } }
 }
-def M: Parser[Int] = rule {
+def M: P[Int] = rule {
   P ~ ($("*") ~ P | $("/") ~ P).* ^^ { case x ~ ys =>
     ys.foldLeft(x) { case (l, op ~ r) => if (op == "*") l * r else l / r } }
 }
-def P: P[Int] = rule{
-  (for { _ <- $("("); e <- E; _ <- $(")")} yield e) | N
+def P: P[Int] = rule {
+  $("(") ~ E ~ $(")") ^^ { case _ ~ e ~ _ => e } | N
 }
 def N: P[Int] = rule {
   ('0' to '9').map{c => $(c.toString) ^^ (_.toInt)}.reduce((p1, p2) => p1 | p2)
@@ -669,9 +680,6 @@ def N: P[Int] = rule {
 
 ---
 
-### 学べること
-
-- `for`式と `map`, `flatMap` の関係
 - 相互再帰メソッドの定義方法
 
 ---
