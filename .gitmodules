@@ -1,0 +1,3 @@
+[submodule "scalafukuoka2019/usparse"]
+	path = scalafukuoka2019/usparse
+	url = git@github.com:kmizu/usparse.git
