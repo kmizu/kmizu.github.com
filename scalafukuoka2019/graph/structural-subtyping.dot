@@ -1,0 +1,15 @@
+digraph StructuralSubtyping {
+  node [fontname = "Courier"];
+  rankdir = BT;
+  FooLike [
+    label = "{ def foo: String }";
+  ]
+  Foo1 [
+    label = "Foo1";
+  ]
+  Foo2 [
+    label = "Foo2";
+  ]
+  Foo1 -> FooLike;
+  Foo2 -> FooLike;
+}

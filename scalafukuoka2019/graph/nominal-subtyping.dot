@@ -1,0 +1,16 @@
+digraph CST {
+  node [fontname = "Courier"];
+  Foo [
+    label = "Foo";
+  ]
+  Bar1 [
+    label = "Bar1";
+  ]
+  Bar2 [
+    label = "Bar2";
+  ]
+  Foo;
+  Bar1 -> Foo;
+  Bar2 -> Foo;
+  rankdir = BT;
+}

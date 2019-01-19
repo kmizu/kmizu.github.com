@@ -214,12 +214,16 @@ Expression ::= IF (cond:Expression, then:Expression, else:Expression)
 
 ```scala
 class Foo { def foo: String = "Foo" }
-class Bar extends Foo
+class Bar1 extends Foo
+class Bar2 extends Foo
 
 // Bar型の値はBar型の変数に代入可能
 // Bar型の値はFoo型の変数に代入可能
-val foo: Foo = new Bar
+val foo1: Foo = new Bar1
+val foo2: Foo = new Bar2 
 ```
+
+<img src="graph/nominal-subtyping.svg">
 
 ---
 
@@ -241,6 +245,8 @@ val foo2: FooLike = new Foo2
 foo1.foo // "Foo1"
 foo2.foo // "Foo2"
 ```
+
+<img src="graph/structural-subtyping.svg">
 
 ---
 
