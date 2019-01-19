@@ -1,4 +1,4 @@
-digraph CST {
+digraph AST {
   subgraph cluster0 {
     Raw [
       label = "if (1 < 2) \"A\" else \"B\""

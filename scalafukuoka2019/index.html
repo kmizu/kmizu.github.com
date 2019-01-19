@@ -268,34 +268,19 @@ val i2: Int = id(1)
 
 - どういう風に実行されるかを定義したもの
 - 例（カジュアルな言い方）：
-  - `1 + 1` は(1 + 1)を計算した値2になる
-  - `1 - 2` は(1 - 2)を計算した値-1になる
-  - `1 * 2` は(1 * 2)を計算した値2になる
-  - `1 / 2` は(1 / 2)を計算した値0になる
+  - `"1 + 1"` は`(1 + 1)`を計算した値`2`になる
+  - `"1 - 2"` は`(1 - 2)`を計算した値`-1`になる
+  - `"1 * 2"` は`(1 * 2)`を計算した値`2`になる
+  - `"1 / 2"` は`(1 / 2)`を計算した値`0`になる
 
 ---
 
 ### 意味論（２）
 
-- 要は `eval`の挙動のこと
+- 抽象構文木の変換の方法を示したものと
+  みることができる
 
-```scala
-def eval(tree: Tree): Int = tree match {
-  // IF(cond:Expression, then:Expression, else:Expression)
-  case If(condE, thenE, elseE) =>
-    if(eval(condE) != 0)
-      eval(thenE)
-    else
-      eval(elseE)
-  // x < y
-  case LT(x, y) =>
-    if(eval(x) < eval(y)) 1 else 0
-  // "..."
-  case Str(v) =>
-    v
-  case ...
-}
-```
+<img src="graph/eval.svg">
 
 ---
 
