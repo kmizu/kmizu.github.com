@@ -313,13 +313,15 @@ x = "X"    // 整数型の変数に文字列を代入しようとした
 
 ---
 
-* `com.github.kmizu.nub2.Ast` を参照
+* `com.github.kmizu.nub2.Ast`
 
 ---
 
 ### 整数リテラル
 
 * `com.github.kmizu.nub2.Ast.IntLiteral`
+* `tInt`は`Ast.Factory`のstaticメソッド
+  * static importすれば簡潔
 
 ```java
 tInt(1)    // 1
@@ -334,6 +336,7 @@ tInt(100)  // 100
 ### 真偽値リテラル
 
 * `com.github.kmizu.nub2.Ast.BooleanLiteral`
+* `tBoolean`も前に同じ
 
 ```java
 tBoolean(true)  // true
@@ -569,6 +572,7 @@ tCall("add", tInt(1), tInt(2))
 1. Java SE 8（AdoptOpenJDK 8）をインストール
 1. Apache Maven 3をインストール
 1. nub2をclone & compile
+  * 既にやってたら`git pull`
 
 ```
 $ git clone https://github.com/kmizu/nub2.git
@@ -577,6 +581,21 @@ $ mvn compile
 ...
 $ mvn test
 ```
+
+---
+
+# 練習課題
+
+---
+
+### 練習課題について
+
+* nub2はいくつかの機能を未実装にしてあります
+* 既存のコードベースを参考に、機能を実装してください
+* 不明点は遠慮なく質問してください
+* ハッシュタグは `#langimpl2` です
+* どうしてもわからない場合：
+  タグ[`v20191109`](https://github.com/kmizu/nub2/releases/tag/v20191109)に回答例があります
 
 ---
 
@@ -604,26 +623,26 @@ $ mvn test
 
 ### 練習課題：条件式をサポートしよう
 
-* `tIf(tCondition, tThen, tElse)`
-* `tCondition` の評価結果が：
-  * `true`なら、`tThen`を評価
-  * `false`なら、`tElse`を評価
+* `tIf(condition, then, else)`
+* `condition` の評価結果が：
+  * `true`なら、`then`を評価
+  * `false`なら、`else`を評価
 
 ---
 
 ### 練習課題：ループ式をサポートしよう
 
-* `tWhile(tCondition, tBody)`
-* `tCondition` の評価結果が`true`の間：
-  * `tBody`を繰り返し評価する
+* `tWhile(condition, body)`
+* `condition` の評価結果が`true`の間：
+  * `body`を繰り返し評価する
 
 ---
 
 ### 練習課題：代入式をサポートしよう
 
-* `tAssignment(name, newValue)`
-* `newValue` を評価して、値を`name`に代入
-* `newValue` の評価結果を返す
+* `tAssignment(name, expression)`
+* `expression` を評価して、値を`name`に代入
+* `expression` の評価結果を返す
 * ヒント：`LetExpression`の処理を読んでみよう
 
 ---
@@ -664,6 +683,16 @@ end
 * , etc.
 * 実行前にチェックしてエラーを出そう
 * `Typer` クラスに処理を実装しよう
+
+---
+
+### 時間が余った人向け
+
+* 高階関数を実装してみよう
+* コレクションを実装してみよう
+  * 配列やリスト
+* その他の制御構造を追加してみよう
+  * `foreach`など
 
 </script></section>
 
