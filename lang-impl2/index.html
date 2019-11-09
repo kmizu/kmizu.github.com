@@ -89,7 +89,7 @@ Scalaと構文解析アルゴリズムが大好きなプログラマです
 
 * 参加者の数からの質問に対して、私の対応が追いつかない可能性があります
 * 場合によっては、参加者同士で教えあっていただけると助かります
-* 本ハンズオンのハッシュタグは `#lang_impl` です
+* 本ハンズオンのハッシュタグは `#langimpl2` です
 
 ---
 
@@ -203,7 +203,7 @@ Scalaと構文解析アルゴリズムが大好きなプログラマです
 
 ```scala
 println(x) // 未定義の変数を参照しようとした
-val x: Int = 1
+var x: Int = 1
 x = "X"    // 整数型の変数に文字列を代入しようとした
 ```
 
@@ -367,7 +367,7 @@ tAdd(
     tInt(1), 
     tAdd(
          tInt(2),
-         tInt(3)))     // 1 + (2 + 3)
+         tInt(3)))     // 1 + (2 + 3) ==> 6
 
 tAdd(
     tAdd(
@@ -427,7 +427,7 @@ tMultiply(
 ### 四則演算（割り算）
 
 ```java
-tDivide(tInt(1), tInt(2)) // 1 / 2
+tDivide(tInt(1), tInt(2)) // 1 / 2 ==> 0
 
 tDivide(
     tInt(1), 
@@ -461,7 +461,7 @@ tLte(tInt(1), tInt(2))       // 1 <= 2
 
 tEqual(tInt(1), tInt(1))     // 1 == 1
 
-tNotEqual(tInt(1), tInt(2))  // 1 != 1
+tNotEqual(tInt(1), tInt(2))  // 1 != 2
 ```
 
 ---
@@ -555,7 +555,7 @@ tLet(
  */
 tDef(
   "add",
-  Arrays.asList(new String[]{"x", "y"}),
+  Arrays.asList("x", "y"),
   tBlock(
       tAdd(tId("x"), tId("y"))
   )
@@ -603,14 +603,14 @@ $ mvn test
 
 ### 練習課題：二項演算子（比較）をサポートしよう
 
-* `tGt(>)`, `tGTE(>=)`
+* `tGt(>)`, `tGte(>=)`
   * 返り値は`true`と`false`のどちらか
   * オペランドは整数のみ
-  * ヒント： `>` と `>=` の実装を読んでみよう
+  * ヒント： `tLt(<)` と `tLte(>=)` の実装を読んでみよう
 * `tNotEqual(!=)`
   * オペランドは、整数、真偽値、文字列
   * 返り値は`true`か`false`のどちらか
-  * ヒント： `==` の実装を読んでみよう
+  * ヒント： `tEqual(==)` の実装を読んでみよう
 
 ---
 
