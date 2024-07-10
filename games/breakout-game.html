@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>スタイリッシュブロック崩し</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #1a1a2e;
+            font-family: Arial, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        let paddle;
+        let ball;
+        let blocks = [];
+        let score = 0;
+        let lives = 3;
+        let gameState = 'start';
+        let particles = [];
+
+        function setup() {
+            createCanvas(800, 600);
+            paddle = new Paddle();
+            ball = new Ball();
+            createBlocks();
+        }
+
+        function draw() {
+            background(26, 26, 46);
+
+            if (gameState === 'start') {
+                displayStartScreen();
+            } else if (gameState === 'play') {
+                updateGame();
+                displayGame();
+            } else if (gameState === 'gameOver') {
+                displayGameOverScreen();
+            }
+        }
+
+        function displayStartScreen() {
+            textAlign(CENTER, CENTER);
+            fill(255);
+            textSize(48);
+            text('スタイリッシュブロック崩し', width / 2, height / 2 - 50);
+            textSize(24);
+            text('クリックしてスタート', width / 2, height / 2 + 50);
+        }
+
+        function displayGameOverScreen() {
+            textAlign(CENTER, CENTER);
+            fill(255);
+            textSize(48);
+            text('ゲームオーバー', width / 2, height / 2 - 50);
+            textSize(24);
+            text('スコア: ' + score, width / 2, height / 2 + 20);
+            text('クリックして再スタート', width / 2, height / 2 + 70);
+        }
+
+        function updateGame() {
+            paddle.move();
+            ball.move();
+            ball.checkPaddleCollision(paddle);
+
+            for (let i = blocks.length - 1; i >= 0; i--) {
+                if (ball.checkBlockCollision(blocks[i])) {
+                    blocks.splice(i, 1);
+                    score += 10;
+                    createParticles(ball.pos.x, ball.pos.y);
+                }
+            }
+
+            if (ball.pos.y > height) {
+                lives--;
+                if (lives <= 0) {
+                    gameState = 'gameOver';
+                } else {
+                    ball.reset();
+                }
+            }
+
+            updateParticles();
+        }
+
+        function displayGame() {
+            paddle.display();
+            ball.display();
+            blocks.forEach(block => block.display());
+            displayParticles();
+            displayHUD();
+        }
+
+        function displayHUD() {
+            fill(255);
+            textSize(20);
+            textAlign(LEFT, TOP);
+            text('スコア: ' + score, 10, 10);
+            text('ライフ: ' + lives, width - 100, 10);
+        }
+
+        function mousePressed() {
+            if (gameState === 'start' || gameState === 'gameOver') {
+                startGame();
+            }
+        }
+
+        function startGame() {
+            gameState = 'play';
+            score = 0;
+            lives = 3;
+            createBlocks();
+            ball.reset();
+        }
+
+        function createBlocks() {
+            blocks = [];
+            for (let i = 0; i < 8; i++) {
+                for (let j = 0; j < 4; j++) {
+                    blocks.push(new Block(i * 100 + 50, j * 30 + 50));
+                }
+            }
+        }
+
+        class Paddle {
+            constructor() {
+                this.w = 150;
+                this.h = 20;
+                this.pos = createVector(width / 2 - this.w / 2, height - 40);
+            }
+
+            move() {
+                this.pos.x = constrain(mouseX - this.w / 2, 0, width - this.w);
+            }
+
+            display() {
+                fill(0, 255, 255);
+                noStroke();
+                rect(this.pos.x, this.pos.y, this.w, this.h, 10);
+            }
+        }
+
+        class Ball {
+            constructor() {
+                this.r = 10;
+                this.reset();
+            }
+
+            reset() {
+                this.pos = createVector(width / 2, height - 50);
+                this.vel = createVector(random(-3, 3), -5);
+            }
+
+            move() {
+                this.pos.add(this.vel);
+
+                if (this.pos.x < this.r || this.pos.x > width - this.r) {
+                    this.vel.x *= -1;
+                }
+
+                if (this.pos.y < this.r) {
+                    this.vel.y *= -1;
+                }
+            }
+
+            checkPaddleCollision(paddle) {
+                if (
+                    this.pos.y + this.r > paddle.pos.y &&
+                    this.pos.y + this.r < paddle.pos.y + paddle.h &&
+                    this.pos.x > paddle.pos.x &&
+                    this.pos.x < paddle.pos.x + paddle.w
+                ) {
+                    let angle = map(this.pos.x, paddle.pos.x, paddle.pos.x + paddle.w, -PI / 3, PI / 3);
+                    this.vel = p5.Vector.fromAngle(angle - PI / 2);
+                    this.vel.setMag(6);
+                    createParticles(this.pos.x, this.pos.y);
+                }
+            }
+
+            checkBlockCollision(block) {
+                if (
+                    this.pos.x + this.r > block.pos.x &&
+                    this.pos.x - this.r < block.pos.x + block.w &&
+                    this.pos.y + this.r > block.pos.y &&
+                    this.pos.y - this.r < block.pos.y + block.h
+                ) {
+                    let angle = this.vel.heading();
+                    if (angle > -PI / 4 && angle < PI / 4 || angle > 3 * PI / 4 || angle < -3 * PI / 4) {
+                        this.vel.x *= -1;
+                    } else {
+                        this.vel.y *= -1;
+                    }
+                    return true;
+                }
+                return false;
+            }
+
+            display() {
+                fill(255);
+                noStroke();
+                circle(this.pos.x, this.pos.y, this.r * 2);
+            }
+        }
+
+        class Block {
+            constructor(x, y) {
+                this.pos = createVector(x, y);
+                this.w = 80;
+                this.h = 20;
+                this.color = color(random(100, 255), random(100, 255), random(100, 255));
+            }
+
+            display() {
+                fill(this.color);
+                noStroke();
+                rect(this.pos.x, this.pos.y, this.w, this.h, 5);
+            }
+        }
+
+        function createParticles(x, y) {
+            for (let i = 0; i < 10; i++) {
+                particles.push(new Particle(x, y));
+            }
+        }
+
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update();
+                if (particles[i].isDead()) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        function displayParticles() {
+            particles.forEach(p => p.display());
+        }
+
+        class Particle {
+            constructor(x, y) {
+                this.pos = createVector(x, y);
+                this.vel = p5.Vector.random2D().mult(random(1, 3));
+                this.acc = createVector(0, 0.1);
+                this.r = random(2, 4);
+                this.lifetime = 255;
+            }
+
+            update() {
+                this.vel.add(this.acc);
+                this.pos.add(this.vel);
+                this.lifetime -= 5;
+            }
+
+            isDead() {
+                return this.lifetime < 0;
+            }
+
+            display() {
+                noStroke();
+                fill(255, this.lifetime);
+                circle(this.pos.x, this.pos.y, this.r * 2);
+            }
+        }
+    </script>
+</body>
+</html>
