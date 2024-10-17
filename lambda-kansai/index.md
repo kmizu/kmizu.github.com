@@ -6,9 +6,18 @@ paginate: true
 
 # 関数型プログラミング入門（仮）
 
-## λ Kansai in Autumn 2024 
-## date: 2024年10月19日（土）
-## 水島宏太 / @kmizu
+```scala
+case class Presentation(
+  title: String, author: String, date: Date, venue: String
+)
+
+Presentation(
+  title = "関数型プログラミング入門（仮）",
+  author = "Claude-3.5 Sonnet",
+  date = Date(2024, 10, 19, Sat),
+  venue = "λ Kansai in Autumn 2024",
+).copy(author = "kmizu")
+```
 
 ---
 
