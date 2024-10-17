@@ -6,51 +6,25 @@
     <title>スタイリッシュブロック崩し</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-color: #1a1a2e;
-            font-family: Arial, sans-serif;
-            overflow: hidden;
-        }
-        canvas {
-            display: block;
-            margin: auto;
-        }
+        body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #1a1a2e; font-family: Arial, sans-serif; overflow: hidden; }
+        canvas { display: block; margin: auto; }
     </style>
 </head>
 <body>
     <script>
-        let paddle;
-        let ball;
-        let blocks = [];
-        let score = 0;
-        let lives = 3;
-        let gameState = 'start';
-        let particles = [];
-        let canvasWidth, canvasHeight;
-        let scaleFactor;
+        let paddle, ball, blocks = [], score = 0, lives = 3, gameState = 'start', particles = [], canvasWidth, canvasHeight, scaleFactor, currentStage = 1;
 
         function setup() {
-            // キャンバスサイズを画面サイズに合わせて設定
             canvasWidth = min(windowWidth, 800);
             canvasHeight = min(windowHeight, 600);
             createCanvas(canvasWidth, canvasHeight);
-            
-            // スケールファクターを計算
             scaleFactor = min(canvasWidth / 800, canvasHeight / 600);
-            
             paddle = new Paddle();
             ball = new Ball();
             createBlocks();
         }
 
         function windowResized() {
-            // ウィンドウサイズが変更されたときにキャンバスサイズを再調整
             canvasWidth = min(windowWidth, 800);
             canvasHeight = min(windowHeight, 600);
             resizeCanvas(canvasWidth, canvasHeight);
@@ -60,19 +34,13 @@
             createBlocks();
         }
 
-        // 以下の関数は基本的に同じですが、描画時にscaleFactorを考慮します
-
         function draw() {
             background(26, 26, 46);
-
-            if (gameState === 'start') {
-                displayStartScreen();
-            } else if (gameState === 'play') {
-                updateGame();
-                displayGame();
-            } else if (gameState === 'gameOver') {
-                displayGameOverScreen();
-            }
+            if (gameState === 'start') displayStartScreen();
+            else if (gameState === 'play') { updateGame(); displayGame(); }
+            else if (gameState === 'gameOver') displayGameOverScreen();
+            else if (gameState === 'stageClear') displayStageClearScreen();
+            else if (gameState === 'gameClear') displayGameClearScreen();
         }
 
         function displayStartScreen() {
@@ -94,11 +62,29 @@
             text('タップして再スタート', width / 2, height / 2 + 70 * scaleFactor);
         }
 
+        function displayStageClearScreen() {
+            textAlign(CENTER, CENTER);
+            fill(255);
+            textSize(48 * scaleFactor);
+            text('ステージ ' + currentStage + ' クリア！', width / 2, height / 2 - 50 * scaleFactor);
+            textSize(24 * scaleFactor);
+            text('タップして次のステージへ', width / 2, height / 2 + 50 * scaleFactor);
+        }
+
+        function displayGameClearScreen() {
+            textAlign(CENTER, CENTER);
+            fill(255);
+            textSize(48 * scaleFactor);
+            text('ゲームクリア！', width / 2, height / 2 - 50 * scaleFactor);
+            textSize(24 * scaleFactor);
+            text('スコア: ' + score, width / 2, height / 2 + 20 * scaleFactor);
+            text('タップして再スタート', width / 2, height / 2 + 70 * scaleFactor);
+        }
+
         function updateGame() {
             paddle.move();
             ball.move();
             ball.checkPaddleCollision(paddle);
-
             for (let i = blocks.length - 1; i >= 0; i--) {
                 if (ball.checkBlockCollision(blocks[i])) {
                     blocks.splice(i, 1);
@@ -106,16 +92,19 @@
                     createParticles(ball.pos.x, ball.pos.y);
                 }
             }
-
-            if (ball.pos.y > height) {
-                lives--;
-                if (lives <= 0) {
-                    gameState = 'gameOver';
+            if (blocks.length === 0) {
+                if (currentStage < 3) {
+                    currentStage++;
+                    gameState = 'stageClear';
                 } else {
-                    ball.reset();
+                    gameState = 'gameClear';
                 }
             }
-
+            if (ball.pos.y > height) {
+                lives--;
+                if (lives <= 0) gameState = 'gameOver';
+                else ball.reset();
+            }
             updateParticles();
         }
 
@@ -131,20 +120,19 @@
             fill(255);
             textSize(20 * scaleFactor);
             textAlign(LEFT, TOP);
-            text('スコア: ' + score, 10 * scaleFactor, 10 * scaleFactor);
+            text('ステージ: ' + currentStage, 10 * scaleFactor, 10 * scaleFactor);
+            text('スコア: ' + score, 10 * scaleFactor, 40 * scaleFactor);
             text('ライフ: ' + lives, width - 100 * scaleFactor, 10 * scaleFactor);
         }
 
         function mousePressed() {
-            if (gameState === 'start' || gameState === 'gameOver') {
-                startGame();
-            }
+            if (['start', 'gameOver', 'gameClear'].includes(gameState)) startGame();
+            else if (gameState === 'stageClear') nextStage();
         }
 
         function touchStarted() {
-            if (gameState === 'start' || gameState === 'gameOver') {
-                startGame();
-            }
+            if (['start', 'gameOver', 'gameClear'].includes(gameState)) startGame();
+            else if (gameState === 'stageClear') nextStage();
             return false;
         }
 
@@ -152,6 +140,13 @@
             gameState = 'play';
             score = 0;
             lives = 3;
+            currentStage = 1;
+            createBlocks();
+            ball.reset();
+        }
+
+        function nextStage() {
+            gameState = 'play';
             createBlocks();
             ball.reset();
         }
@@ -161,10 +156,10 @@
             let blockWidth = 80 * scaleFactor;
             let blockHeight = 20 * scaleFactor;
             let cols = floor(width / (blockWidth + 20 * scaleFactor));
-            let rows = 4;
+            let rows = 3 + currentStage;
             for (let i = 0; i < cols; i++) {
                 for (let j = 0; j < rows; j++) {
-                    blocks.push(new Block(i * (blockWidth + 20 * scaleFactor) + blockWidth / 2, j * (blockHeight + 10 * scaleFactor) + blockHeight + 50 * scaleFactor));
+                    blocks.push(new Block(i * (blockWidth + 20 * scaleFactor) + blockWidth / 2, j * (blockHeight + 10 * scaleFactor) + blockHeight + 50 * scaleFactor, currentStage));
                 }
             }
         }
@@ -175,21 +170,14 @@
                 this.h = 20 * scaleFactor;
                 this.pos = createVector(width / 2 - this.w / 2, height - 40 * scaleFactor);
             }
-
             resize() {
                 this.w = 150 * scaleFactor;
                 this.h = 20 * scaleFactor;
                 this.pos = createVector(width / 2 - this.w / 2, height - 40 * scaleFactor);
             }
-
             move() {
-                if (touches.length > 0) {
-                    this.pos.x = constrain(touches[0].x - this.w / 2, 0, width - this.w);
-                } else {
-                    this.pos.x = constrain(mouseX - this.w / 2, 0, width - this.w);
-                }
+                this.pos.x = constrain(mouseX - this.w / 2, 0, width - this.w);
             }
-
             display() {
                 fill(0, 255, 255);
                 noStroke();
@@ -202,50 +190,31 @@
                 this.r = 10 * scaleFactor;
                 this.reset();
             }
-
             resize() {
                 this.r = 10 * scaleFactor;
                 this.reset();
             }
-
             reset() {
                 this.pos = createVector(width / 2, height - 50 * scaleFactor);
                 this.vel = createVector(random(-3, 3) * scaleFactor, -5 * scaleFactor);
             }
-
             move() {
                 this.pos.add(this.vel);
-
-                if (this.pos.x < this.r || this.pos.x > width - this.r) {
-                    this.vel.x *= -1;
-                }
-
-                if (this.pos.y < this.r) {
-                    this.vel.y *= -1;
-                }
+                if (this.pos.x < this.r || this.pos.x > width - this.r) this.vel.x *= -1;
+                if (this.pos.y < this.r) this.vel.y *= -1;
             }
-
             checkPaddleCollision(paddle) {
-                if (
-                    this.pos.y + this.r > paddle.pos.y &&
-                    this.pos.y + this.r < paddle.pos.y + paddle.h &&
-                    this.pos.x > paddle.pos.x &&
-                    this.pos.x < paddle.pos.x + paddle.w
-                ) {
+                if (this.pos.y + this.r > paddle.pos.y && this.pos.y + this.r < paddle.pos.y + paddle.h &&
+                    this.pos.x > paddle.pos.x && this.pos.x < paddle.pos.x + paddle.w) {
                     let angle = map(this.pos.x, paddle.pos.x, paddle.pos.x + paddle.w, -PI / 3, PI / 3);
                     this.vel = p5.Vector.fromAngle(angle - PI / 2);
-                    this.vel.setMag(6 * scaleFactor);
+                    this.vel.setMag((6 + currentStage) * scaleFactor);
                     createParticles(this.pos.x, this.pos.y);
                 }
             }
-
             checkBlockCollision(block) {
-                if (
-                    this.pos.x + this.r > block.pos.x &&
-                    this.pos.x - this.r < block.pos.x + block.w &&
-                    this.pos.y + this.r > block.pos.y &&
-                    this.pos.y - this.r < block.pos.y + block.h
-                ) {
+                if (this.pos.x + this.r > block.pos.x && this.pos.x - this.r < block.pos.x + block.w &&
+                    this.pos.y + this.r > block.pos.y && this.pos.y - this.r < block.pos.y + block.h) {
                     let angle = this.vel.heading();
                     if (angle > -PI / 4 && angle < PI / 4 || angle > 3 * PI / 4 || angle < -3 * PI / 4) {
                         this.vel.x *= -1;
@@ -256,7 +225,6 @@
                 }
                 return false;
             }
-
             display() {
                 fill(255);
                 noStroke();
@@ -265,17 +233,21 @@
         }
 
         class Block {
-            constructor(x, y) {
+            constructor(x, y, stage) {
                 this.pos = createVector(x, y);
                 this.w = 80 * scaleFactor;
                 this.h = 20 * scaleFactor;
                 this.color = color(random(100, 255), random(100, 255), random(100, 255));
+                this.health = stage;
             }
-
             display() {
                 fill(this.color);
                 noStroke();
                 rect(this.pos.x, this.pos.y, this.w, this.h, 5 * scaleFactor);
+                fill(0);
+                textAlign(CENTER, CENTER);
+                textSize(16 * scaleFactor);
+                text(this.health, this.pos.x + this.w / 2, this.pos.y + this.h / 2);
             }
         }
 
@@ -306,17 +278,14 @@
                 this.r = random(2, 4) * scaleFactor;
                 this.lifetime = 255;
             }
-
             update() {
                 this.vel.add(this.acc);
                 this.pos.add(this.vel);
                 this.lifetime -= 5;
             }
-
             isDead() {
                 return this.lifetime < 0;
             }
-
             display() {
                 noStroke();
                 fill(255, this.lifetime);
