@@ -36,10 +36,8 @@ Presentation(
 
 # We are hiring!
 
-株式会社ネクストビートでは、ソフトウェアエンジニア募集中です
-- とくにScalaエンジニア/ TypeScriptエンジニア
+株式会社ネクストビートでは、ソフトウェアエンジニアを募集中です
 - 興味のある方はXのkmizuまでDMでご連絡ください
-
 ![arc](arc.png)
 
 ---
@@ -139,24 +137,22 @@ console.log(totalSales);  // 2000
 ```javascript
 // 可変なオブジェクト（非関数型）
 const addTopping = (ramen, topping) => {
-    ramen.toppings.push(topping);
-    return ramen;
+    ramen.toppings.push(topping); return ramen;
 };
 // 不変なオブジェクト（関数型）
 const addToppingImmutable = (ramen, topping) => ({
-    ...ramen,
-    toppings: [...ramen.toppings, topping]
+    ...ramen, toppings: [...ramen.toppings, topping]
 });
-
 // 使用例
-const mutableRamen = {broth: 'shoyu', toppings: ['chashu', 'menma']};
-console.log(addTopping(mutableRamen, 'nori'));
-// { broth: 'shoyu', toppings: ['chashu', 'menma', 'nori'] }
+const mutableRamen = {broth: '醤油', toppings: ['チャーシュー', 'メンマ']};
+console.log(addTopping(mutableRamen, '海苔'));
+// { broth: '醤油', toppings: ['チャーシュー', 'メンマ', '海苔'] }
 console.log(mutableRamen);  // 元のデータが変更されている
-const immutableRamen = {broth: 'miso', toppings: ['corn', 'butter']};
-const newRamen = addToppingImmutable(immutableRamen, 'negi');
+
+const immutableRamen = {broth: '味噌', toppings: ['コーン', 'バター']};
+const newRamen = addToppingImmutable(immutableRamen, 'ネギ');
 console.log(newRamen);
-// { broth: 'miso', toppings: ['corn', 'butter', 'negi'] }
+// { broth: '味噌', toppings: ['コーン', 'バター', 'ネギ'] }
 console.log(immutableRamen);  // 元のデータは変更されていない
 ```
 
@@ -169,7 +165,6 @@ console.log(immutableRamen);  // 元のデータは変更されていない
 ```javascript
 const applyDiscount = (calcPrice, discount) => 
     menuItem => calcPrice(menuItem) * (1 - discount);
-
 const regularPrice = menuItem => menuItem.price;
 
 // 使用例
@@ -196,116 +191,42 @@ console.log("600円より高い商品:", expensiveItems.map(item => item.name));
 
 ---
 
-# テスタビリティの向上
-
-- 純粋関数は予測可能
-- 副作用がないため、テストが容易
+# テスタビリティの向上 - 命令型コードのテスト
 
 ```javascript
-// テストしやすい純粋関数
-const calculateTotalWithTax = items => 
-    items.reduce((total, item) => total + item.price, 0) * 1.1;
-// テストが難しい非純粋関数
+// 非純粋関数
 let globalTaxRate = 0.1;
-const calculateTotalWithDynamicTax = items => {
+const calculateTotalWithTax = items => {
     const subtotal = items.reduce((total, item) => total + item.price, 0);
     return subtotal + (subtotal * globalTaxRate);
 };
-// テストしやすい関数型アプローチ
-const calculateTotalWithFlexibleTax = (items, taxRate) => {
+// テスト例
+const testCalculateTotalWithTax = () => {
+    const items = [{name: 'うどん', price: 400}, {name: 'てんぷら', price: 300}];
+    globalTaxRate = 0.08;
+    console.assert(calculateTotalWithTax(items) === 756, 'calculateTotalWithFlexibleTax failed');
+};
+testCalculateTotalWithTax();
+```
+
+---
+
+# テスタビリティの向上 - 関数型コードのテスト
+
+- 純粋関数は副作用がないため、テストが容易
+
+```javascript
+// 純粋関数
+const calculateTotalWithTax = (items, taxRate) => {
     const subtotal = items.reduce((total, item) => total + item.price, 0);
     return subtotal + (subtotal * taxRate);
 };
 // テスト例
 const testCalculateTotalWithTax = () => {
-    const items = [{name: 'たこ焼き', price: 500}, {name: 'お好み焼き', price: 700}];
-    console.assert(calculateTotalWithTax(items) === 1320, 'calculateTotalWithTax failed');
-};
-const testCalculateTotalWithFlexibleTax = () => {
     const items = [{name: 'うどん', price: 400}, {name: 'てんぷら', price: 300}];
-    console.assert(calculateTotalWithFlexibleTax(items, 0.08) === 756, 'calculateTotalWithFlexibleTax failed');
+    console.assert(calculateTotalWithTax(items, 0.08) === 756, 'calculateTotalWithFlexibleTax failed');
 };
 testCalculateTotalWithTax();
-testCalculateTotalWithFlexibleTax();
-```
-
----
-
-# リファクタリング - 命令型アプローチ
-
-```javascript
-const analyzeSales = salesData => {
-    let totalSales = 0;
-    let bestSellingItem = null;
-    let maxQuantity = 0;
-    
-    for (let item of salesData) {
-        totalSales += item.price * item.quantity;
-        if (item.quantity > maxQuantity) {
-            maxQuantity = item.quantity;
-            bestSellingItem = item.name;
-        }
-    }
-    
-    const averageSales = salesData.length ? totalSales / salesData.length : 0;
-    return [totalSales, averageSales, bestSellingItem];
-};
-
-// 使用例
-const salesData = [
-    {name: 'うどん', price: 500, quantity: 10},
-    {name: 'そば', price: 550, quantity: 15},
-    {name: 'てんぷら', price: 700, quantity: 5}
-];
-
-console.log(analyzeSales(salesData));
-
-// 新しい要件：売上税を含める
-const analyzeSaleWithTax = (salesData, taxRate = 0.1) => {
-    const [totalSales, averageSales, bestSellingItem] = analyzeSales(salesData);
-    return [totalSales * (1 + taxRate), averageSales * (1 + taxRate), bestSellingItem];
-};
-const applyTax = (amount, taxRate = 0.1) => amount * (1 + taxRate);
-
-console.log(analyzeSalesWithTax(salesData));
-```
-
----
-
-# リファクタリング - 関数型アプローチ
-
-```js
-// 関数型アプローチ
-const calculateTotalSales = salesData => 
-    salesData.reduce((total, item) => total + item.price * item.quantity, 0);
-const calculateAverageSales = salesData => 
-    salesData.length ? calculateTotalSales(salesData) / salesData.length : 0;
-const findBestSellingItem = salesData => 
-    salesData.length ? salesData.reduce((best, item) => 
-        item.quantity > best.quantity ? item : best
-    ).name : null;
-const analyzeSales = salesData => [
-    calculateTotalSales(salesData),
-    calculateAverageSales(salesData),
-    findBestSellingItem(salesData)
-];
-// 使用例
-const salesData = [
-    {name: 'うどん', price: 500, quantity: 10},
-    {name: 'そば', price: 550, quantity: 15},
-    {name: 'てんぷら', price: 700, quantity: 5}
-];
-
-console.log(analyzeSalesFunctional(salesData));
-
-// 新しい要件：売上税を含める
-const applyTax = (amount, taxRate = 0.1) => amount * (1 + taxRate);
-const analyzeSalesWithTax = (salesData, taxRate = 0.1) => [
-    applyTax(calculateTotalSales(salesData), taxRate),
-    applyTax(calculateAverageSales(salesData), taxRate),
-    findBestSellingItem(salesData)
-];
-console.log(analyzeSalesWithTax(salesData));
 ```
 
 ---
