@@ -34,6 +34,15 @@ Presentation(
 
 ---
 
+# We are hiring!
+
+とくにScalaエンジニア/ TypeScriptエンジニア募集中
+- 興味のある方はXのkmizuまでDMでご連絡ください
+
+![arc](arc.png)
+
+---
+
 # 目次
 
 - 関数型プログラミングとは？
