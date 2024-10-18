@@ -23,43 +23,46 @@ Presentation(
 
 # 自己紹介
 
-- id: @kmizu
-  - X: https://x.com/kmizu
+![duke](duke.png)
+
+- @kmizu: https://x.com/kmizu
   - GitHub: https://github.com/kmizu
+- **株式会社ネクストビートネクストビート**所属
 - プログラミング言語大好きおじさん
-  - どうでもいいプログラミング言語作ってます
-- お仕事ではScala関係のことやってます
-  - Scala 3の学習テキスト作ったり
+- Scala関係のお仕事やってます
 - 趣味：プログラミング言語作り、生成AI弄り、小説執筆、散歩
 
 ---
 
 # We are hiring!
 
-とくにScalaエンジニア/ TypeScriptエンジニア募集中
+株式会社ネクストビートでは、ソフトウェアエンジニア募集中です
+- とくにScalaエンジニア/ TypeScriptエンジニア
 - 興味のある方はXのkmizuまでDMでご連絡ください
 
 ![arc](arc.png)
 
 ---
 
-# 目次
+# 今回お話すること
+
+関数型プログラミングの**最初の一歩**をJavaScriptで説明する
 
 - 関数型プログラミングとは？
 - なぜ関数型プログラミングか？
-- 関数型プログラミングの主要概念と実践
-- テスタビリティの向上
-- リファクタリングと保守性
-- 始め方：最初の一歩
+- 関数型プログラミングの主な概念
+- テスタビリティを向上させる
+- リファクタリング
+- 最初の一歩を踏み出すために
 
 ---
 
 # 関数型プログラミングとは？
 
-- 数学的な関数の概念に基づくプログラミングパラダイム
-  - といっても数学の関数とはだいぶ違う
+- 関数の概念に基づくプログラミングパラダイム
+  - 数学の関数とはけっこう違う <- 計算可能関数
 - 状態の変更や可変データを避け、関数の適用に焦点を当てる
-  - 副作用ゼロは必須でなく「なるべく」避けるくらいでOK
+  - 副作用は**なるべく**避けるでOK
 
 ---
 
@@ -67,23 +70,24 @@ Presentation(
 
 ```javascript
 // 命令型
-function calculateTotalPoints(scores) {
+function calculateAverage(scores) {
     let total = 0;
     for (let score of scores) {
-        if (score >= 80) total += 100;
-        else if (score >= 60)  total += 50;
+        total += score;
     }
-    return total;
+    return total / scores.length;
 }
 // 関数型
-const calculateTotalPointsFunctional = scores => 
-    scores.reduce((total, score) => 
-        total + (score >= 80 ? 100 : score >= 60 ? 50 : 0), 0);
+const calculateAverageFunctional = scores => { 
+    const total = 
+        scores.reduce((total, score) => total + score);
+    return total / scores.length;
+}
 
 // 使用例
 const testScores = [75, 80, 90, 50, 60];
-console.log(calculateTotalPoints(testScores));         // 300
-console.log(calculateTotalPointsFunctional(testScores));  // 300
+console.log(calculateAverage(testScores)); // 71
+console.log(calculateAverageFunctional(testScores));  // 71
 ```
 
 ---
@@ -104,7 +108,7 @@ console.log(calculateTotalPointsFunctional(testScores));  // 300
 
 ---
 
-# 関数型プログラミングの主要概念と実践 - 純粋関数
+# 関数型プログラミングの主な概念 - 純粋関数
 
 - 同じ入力に対して常に同じ出力を返す
 - 副作用がない（外部の状態を変更しない）
@@ -128,7 +132,7 @@ console.log(totalSales);  // 2000
 
 ---
 
-# 関数型プログラミングの主要概念と実践 - 不変性
+# 関数型プログラミングの主な概念 - 不変性
 
 - 一度作成されたデータが変更されないこと
 
@@ -143,6 +147,7 @@ const addToppingImmutable = (ramen, topping) => ({
     ...ramen,
     toppings: [...ramen.toppings, topping]
 });
+
 // 使用例
 const mutableRamen = {broth: 'shoyu', toppings: ['chashu', 'menma']};
 console.log(addTopping(mutableRamen, 'nori'));
@@ -157,7 +162,7 @@ console.log(immutableRamen);  // 元のデータは変更されていない
 
 ---
 
-# 関数型プログラミングの主要概念と実践 - 高階関数
+# 関数型プログラミングの主な概念 - 高階関数
 
 - 関数を引数として受け取るか、関数を戻り値として返す関数
 
@@ -226,7 +231,7 @@ testCalculateTotalWithFlexibleTax();
 
 ---
 
-# リファクタリングと保守性 - 命令型アプローチ
+# リファクタリング - 命令型アプローチ
 
 ```javascript
 const analyzeSales = salesData => {
@@ -267,7 +272,7 @@ console.log(analyzeSalesWithTax(salesData));
 
 ---
 
-# リファクタリングと保守性 - 関数型アプローチ
+# リファクタリング - 関数型アプローチ
 
 ```js
 // 関数型アプローチ
@@ -305,7 +310,7 @@ console.log(analyzeSalesWithTax(salesData));
 
 ---
 
-# 始め方：最初の一歩
+# 最初の一歩を踏み出すために
 
 - **既存のコードを純粋関数に書き換える**
    - 副作用を分離し、入力と出力を明確にする
