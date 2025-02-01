@@ -2,8 +2,8 @@
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
-    <title>将棋 AI対戦（駒レンダリング改良版）</title>
-    <!-- p5.js の CDN を読み込み -->
+    <title>将棋 AI対戦（強化版AI）</title>
+    <!-- p5.js の CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.js"></script>
     <style>
       body {
@@ -19,33 +19,50 @@
   </head>
   <body>
     <script>
-      /*
-       * このサンプルは、先の将棋サンプルコードに加え、
-       * 盤上および持ち駒の駒をより本物らしい形状（多角形）で描画します。
-       *
-       * ・駒は、白塗りの多角形（五角形風）に黒の縁取りと文字を描くことで表現
-       * ・AI側の駒は、盤上で180° 回転して表示
-       *
-       * ※一部、将棋の細かいルール（打歩詰め、自殺手など）は簡略化しています。
-       */
+      /*******************************************
+       * 将棋の基本ルール（打・成・持ち駒）と盤面描画
+       * およびプレイヤーと AI の対戦（AI：強化版）を実装
+       *******************************************/
 
-      let board; // 9×9 の盤面。各セルは駒オブジェクトまたは null
-      let hands; // 持ち駒： { "1": [駒オブジェクト...], "-1": [...] }
-      let currentPlayer; // 1: プレイヤー（下側）， -1: AI（上側）
-      let cellSize = 60; // １マスのピクセルサイズ
-      let selected = null; // 選択状態　例：{ fromBoard: true, x, y, piece } または { fromHand: true, handIndex, piece }
+      let board;   // 9×9 の盤面。各セルに駒オブジェクトまたは null
+      let hands;   // 持ち駒： { "1": [駒オブジェクト...], "-1": [...] }
+      let currentPlayer; // 1: プレイヤー（下側）、 -1: AI（上側）
+      let cellSize = 60; // 1マスのピクセルサイズ
+      let selected = null; // 選択中の駒情報（盤上または持ち駒からの選択）
       let gameOver = false;
-      let aiDepth = 2; // AI の探索深度（高くすると計算時間が長くなります）
 
-      // p5.js の setup 関数
+      /*******************************************
+       * AI 強化用グローバル変数
+       *******************************************/
+      let searchStartTime = 0;
+      let timeLimit = 2000; // AI探索の最大許容時間（ミリ秒）
+      let maxSearchDepth = 5; // 最大探索深度（探索時間との兼ね合いで調整）
+      let transpositionTable = new Map(); // 局面ハッシュをキーにした TT
+
+      /*******************************************
+       * p5.js setup / draw
+       *******************************************/
       function setup() {
         createCanvas(cellSize * 9, cellSize * 9 + 120);
         initGame();
       }
 
-      // ゲーム初期化
+      function draw() {
+        drawBoard();
+        drawHands();
+        if (gameOver) {
+          fill(0);
+          textSize(32);
+          textAlign(CENTER, CENTER);
+          text("ゲーム終了", width / 2, height / 2);
+        }
+      }
+
+      /*******************************************
+       * ゲーム初期化
+       *******************************************/
       function initGame() {
-        // 盤面の初期化（9×9, すべて null）
+        // 盤面の初期化（9×9、すべて null）
         board = [];
         for (let y = 0; y < 9; y++) {
           board[y] = [];
@@ -53,11 +70,10 @@
             board[y][x] = null;
           }
         }
-        // 持ち駒初期化
+        // 持ち駒の初期化
         hands = { "1": [], "-1": [] };
 
-        // 【AI側（上段：owner = -1）の初期配置】
-        // 1段目（盤面 row=0）：香、桂、銀、金、玉、金、銀、桂、香
+        // AI側（上段：owner = -1）の初期配置
         board[0][0] = createPiece("L", -1);
         board[0][1] = createPiece("N", -1);
         board[0][2] = createPiece("S", -1);
@@ -67,16 +83,13 @@
         board[0][6] = createPiece("S", -1);
         board[0][7] = createPiece("N", -1);
         board[0][8] = createPiece("L", -1);
-        // 2段目：角(B)と飛(R)
         board[1][1] = createPiece("B", -1);
         board[1][7] = createPiece("R", -1);
-        // 3段目：全て歩
         for (let x = 0; x < 9; x++) {
           board[2][x] = createPiece("P", -1);
         }
 
-        // 【プレイヤー側（下段：owner = 1）の初期配置】
-        // 9段目（row=8）：香、桂、銀、金、玉、金、銀、桂、香
+        // プレイヤー側（下段：owner = 1）の初期配置
         board[8][0] = createPiece("L", 1);
         board[8][1] = createPiece("N", 1);
         board[8][2] = createPiece("S", 1);
@@ -86,10 +99,8 @@
         board[8][6] = createPiece("S", 1);
         board[8][7] = createPiece("N", 1);
         board[8][8] = createPiece("L", 1);
-        // 8段目：飛(R)と角(B)
         board[7][1] = createPiece("R", 1);
         board[7][7] = createPiece("B", 1);
-        // 7段目：全て歩
         for (let x = 0; x < 9; x++) {
           board[6][x] = createPiece("P", 1);
         }
@@ -104,7 +115,7 @@
         return { type: type, owner: owner, promoted: promoted };
       }
 
-      // 駒の表示用ラベルを返す（成り駒は別の文字で表示）
+      // 駒の表示用ラベル（成駒は別文字）
       function getPieceLabel(piece) {
         if (piece.promoted) {
           if (piece.type === "P") return "と";
@@ -125,21 +136,22 @@
         return "";
       }
 
-      // 盤上に将棋盤と駒を描画
+      /*******************************************
+       * 盤面描画（将棋盤＋駒レンダリング）
+       *******************************************/
       function drawBoard() {
         background(240);
         stroke(0);
-        // 盤面のグリッドを描画
+        // 盤面グリッド
         for (let i = 0; i <= 9; i++) {
           line(i * cellSize, 0, i * cellSize, 9 * cellSize);
           line(0, i * cellSize, 9 * cellSize, i * cellSize);
         }
-        // 駒を描画（各セル中央に配置）
+        // 盤上の駒描画（各セル中央に表示）
         for (let y = 0; y < 9; y++) {
           for (let x = 0; x < 9; x++) {
             let piece = board[y][x];
             if (piece) {
-              // drawShogiPieceAt(cx, cy, piece, width, height)
               drawShogiPieceAt(
                 x * cellSize + cellSize / 2,
                 y * cellSize + cellSize / 2,
@@ -150,7 +162,7 @@
             }
           }
         }
-        // 選択中の駒があれば、赤枠でハイライト
+        // 選択中の駒があれば赤枠でハイライト
         if (selected && selected.fromBoard) {
           noFill();
           stroke(255, 0, 0);
@@ -160,25 +172,21 @@
         }
       }
 
-      // 持ち駒（打）エリアを描画
+      // 持ち駒エリア描画
       function drawHands() {
-        // 背景・タイトル表示
         fill(0);
         textSize(20);
         textAlign(LEFT, TOP);
         text("持ち駒（あなた）:", 10, 9 * cellSize + 10);
-        // プレイヤーの持ち駒は、各駒を盤と同じ形状で描画
         let xOffset = 150;
         let handW = 35;
         let handH = 35;
         for (let i = 0; i < hands["1"].length; i++) {
           let piece = hands["1"][i];
-          // 各持ち駒の描画位置（中心座標）
           let cx = xOffset + i * 40 + handW / 2;
           let cy = 9 * cellSize + 10 + handH / 2;
           drawShogiPieceAt(cx, cy, piece, handW, handH);
         }
-        // AI の持ち駒（参考表示）
         text("持ち駒（AI）:", 10, 9 * cellSize + 50);
         xOffset = 150;
         for (let i = 0; i < hands["-1"].length; i++) {
@@ -189,13 +197,12 @@
         }
       }
 
-      // 駒を「将棋駒らしい」多角形として描画する関数
-      // cx, cy：描画する中心座標
-      // w, h：駒の幅・高さ
+      // 将棋駒らしい多角形で描画する関数
+      // (cx,cy)：中心座標, w,h：幅と高さ
       function drawShogiPieceAt(cx, cy, piece, w, h) {
         push();
         translate(cx, cy);
-        // AI側の駒は盤上で180°回転
+        // AI側は盤上で180°回転
         if (piece.owner === -1) {
           rotate(PI);
         }
@@ -203,12 +210,11 @@
         noStroke();
         fill(255);
         beginShape();
-        // 下側の辺から左回りで描画（5角形風の形状）
-        vertex(-w / 2, h / 2);        // 左下
-        vertex(w / 2, h / 2);         // 右下
-        vertex(w / 2, -h / 4);        // 右上（やや下がった位置）
-        vertex(0, -h / 2);            // 真上（頂点）
-        vertex(-w / 2, -h / 4);       // 左上
+        vertex(-w / 2, h / 2);
+        vertex(w / 2, h / 2);
+        vertex(w / 2, -h / 4);
+        vertex(0, -h / 2);
+        vertex(-w / 2, -h / 4);
         endShape(CLOSE);
         // 駒の縁取り
         stroke(0);
@@ -221,7 +227,7 @@
         vertex(0, -h / 2);
         vertex(-w / 2, -h / 4);
         endShape(CLOSE);
-        // 駒の文字（駒の種類）
+        // 駒の文字表示
         noStroke();
         fill(0);
         textSize(w * 0.3);
@@ -230,25 +236,15 @@
         pop();
       }
 
-      // p5.js の draw 関数
-      function draw() {
-        drawBoard();
-        drawHands();
-        if (gameOver) {
-          fill(0);
-          textSize(32);
-          textAlign(CENTER, CENTER);
-          text("ゲーム終了", width / 2, height / 2);
-        }
-      }
-
-      // マウスクリック時の処理（盤上 or 持ち駒エリア）
+      /*******************************************
+       * マウス操作（駒選択・移動・打）
+       *******************************************/
       function mousePressed() {
         if (gameOver || currentPlayer !== 1) return;
         let x = floor(mouseX / cellSize);
         let y = floor(mouseY / cellSize);
 
-        // 盤面内クリックの場合
+        // 盤面内の場合
         if (x >= 0 && x < 9 && y >= 0 && y < 9) {
           if (selected) {
             if (selected.fromBoard) {
@@ -272,7 +268,7 @@
               }
             }
           }
-          // 盤上で自分の駒を選択
+          // 盤上のセルクリックで自駒選択
           let piece = board[y][x];
           if (piece && piece.owner === 1) {
             selected = { fromBoard: true, x: x, y: y, piece: piece };
@@ -280,8 +276,7 @@
             selected = null;
           }
         } else {
-          // 持ち駒エリアのクリック判定
-          // プレイヤーの持ち駒エリア（盤下部上段）
+          // 持ち駒エリア判定（盤下部上段）
           if (mouseY >= 9 * cellSize + 10 && mouseY <= 9 * cellSize + 10 + 35) {
             let index = floor((mouseX - 150) / 40);
             if (index >= 0 && index < hands["1"].length) {
@@ -293,22 +288,25 @@
         }
       }
 
-      // 実際に手を適用する
+      /*******************************************
+       * 手の適用と局面更新
+       *******************************************/
       // move の例：
-      // 盤上移動の場合：{ from: {x,y}, to: {x,y}, promote: true/false }
-      // 打の場合：{ drop: pieceType, to: {x,y}, handIndex: ○ }
+      // 盤上移動の場合: { from: {x,y}, to: {x,y}, promote: true/false }
+      // 打の場合: { drop: pieceType, to: {x,y}, handIndex: ○ }
       function makeMove(move) {
         board = simulateMove(board, hands, move);
         if (!findKing(board, 1) || !findKing(board, -1)) {
           gameOver = true;
         }
         currentPlayer *= -1;
+        // AI の手番へ
         if (currentPlayer === -1 && !gameOver) {
-          setTimeout(aiMove, 500);
+          setTimeout(aiMove, 100);
         }
       }
 
-      // 指定の move を盤面・持ち駒に反映
+      // 実際に move を盤面・持ち駒に反映
       function simulateMove(bd, hnds, move) {
         if (move.drop) {
           bd[move.to.y][move.to.x] = createPiece(move.drop, currentPlayer, false);
@@ -330,7 +328,7 @@
         return bd;
       }
 
-      // 盤面から指定 owner の王(K)を探す
+      // 盤面から指定 owner の王を探す
       function findKing(bd, owner) {
         for (let y = 0; y < 9; y++) {
           for (let x = 0; x < 9; x++) {
@@ -343,8 +341,11 @@
         return null;
       }
 
-      // 成り可能判定（歩・香・桂・銀・角・飛）
-      // 移動前または移動先が相手陣3段内なら成り可能
+      /*******************************************
+       * 成り判定
+       *******************************************/
+      // 成り可能：歩・香・桂・銀・角・飛
+      // （移動前または移動先が相手陣3段内なら成り可能）
       function canPromote(piece, fromY, toY) {
         if (piece.promoted) return false;
         if (piece.type === "K" || piece.type === "G") return false;
@@ -354,8 +355,7 @@
           return fromY >= 6 || toY >= 6;
         }
       }
-
-      // 一部駒は敵陣最奥などで必ず成らなければならない
+      // 必須成り判定（一部の駒は敵陣最奥では必ず成る）
       function mustPromote(piece, toY) {
         if (piece.type === "P" || piece.type === "L") {
           if (piece.owner === 1 && toY === 0) return true;
@@ -368,7 +368,9 @@
         return false;
       }
 
-      // 盤上の駒の合法手（移動候補）を生成（簡易的な実装）
+      /*******************************************
+       * 駒の合法手生成（盤上の移動・打）
+       *******************************************/
       function getLegalMoves(x, y, bd, owner) {
         let piece = bd[y][x];
         if (!piece || piece.owner !== owner) return [];
@@ -395,7 +397,7 @@
         return moves;
       }
 
-      // 駒ごとの擬似合法手を生成
+      // 各駒ごとの擬似合法手生成
       function getPseudoLegalMoves(x, y, bd) {
         let piece = bd[y][x];
         let moves = [];
@@ -471,27 +473,16 @@
             break;
           case "B":
             {
-              let dirs = [
-                [1, 1],
-                [1, -1],
-                [-1, 1],
-                [-1, -1],
-              ];
+              let dirs = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
               for (let d of dirs) {
                 let nx = x + d[0],
-                  ny = y + d[1];
+                    ny = y + d[1];
                 while (nx >= 0 && nx < 9 && ny >= 0 && ny < 9) {
                   if (!bd[ny][nx]) {
-                    moves.push({
-                      from: { x: x, y: y },
-                      to: { x: nx, y: ny },
-                    });
+                    moves.push({ from: { x: x, y: y }, to: { x: nx, y: ny } });
                   } else {
                     if (bd[ny][nx].owner !== owner) {
-                      moves.push({
-                        from: { x: x, y: y },
-                        to: { x: nx, y: ny },
-                      });
+                      moves.push({ from: { x: x, y: y }, to: { x: nx, y: ny } });
                     }
                     break;
                   }
@@ -509,27 +500,16 @@
             break;
           case "R":
             {
-              let dirs = [
-                [1, 0],
-                [-1, 0],
-                [0, 1],
-                [0, -1],
-              ];
+              let dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
               for (let d of dirs) {
                 let nx = x + d[0],
-                  ny = y + d[1];
+                    ny = y + d[1];
                 while (nx >= 0 && nx < 9 && ny >= 0 && ny < 9) {
                   if (!bd[ny][nx]) {
-                    moves.push({
-                      from: { x: x, y: y },
-                      to: { x: nx, y: ny },
-                    });
+                    moves.push({ from: { x: x, y: y }, to: { x: nx, y: ny } });
                   } else {
                     if (bd[ny][nx].owner !== owner) {
-                      moves.push({
-                        from: { x: x, y: y },
-                        to: { x: nx, y: ny },
-                      });
+                      moves.push({ from: { x: x, y: y }, to: { x: nx, y: ny } });
                     }
                     break;
                   }
@@ -549,7 +529,7 @@
         return moves;
       }
 
-      // 持ち駒から打つ合法手を生成
+      // 持ち駒から打つ合法手生成
       function getDropMoves(owner, bd, hand, pieceType) {
         let moves = [];
         for (let y = 0; y < 9; y++) {
@@ -583,86 +563,146 @@
         return moves;
       }
 
-      // AI の思考（minimax + α−β枝刈り）
+      /*******************************************
+       * AI 部分：強化版
+       *
+       * ・iterativeDeepening() 内で探索深度を徐々に深め、
+       *   指定時間内に bestMove を更新します。
+       *
+       * ・searchWithMove() は α−β 探索＋静態延長 (quiescence)
+       *   を行い、同一局面は transpositionTable でキャッシュ。
+       *******************************************/
+
+      // AI の思考開始
       function aiMove() {
-        let bestMove = null;
-        let bestVal = -Infinity;
-        let moves = getAllLegalMoves(-1, board, hands);
-        for (let move of moves) {
-          let boardCopy = cloneBoard(board);
-          let handsCopy = cloneHands(hands);
-          simulateMove(boardCopy, handsCopy, move);
-          let val = minimax(boardCopy, handsCopy, aiDepth - 1, false, -Infinity, Infinity);
-          if (val > bestVal) {
-            bestVal = val;
-            bestMove = move;
-          }
-        }
+        transpositionTable = new Map();
+        searchStartTime = Date.now();
+        let bestMove = iterativeDeepening(board, hands, true); // AI は maximizing (owner = -1)
         if (bestMove) {
           makeMove(bestMove);
+        } else {
+          // 万一手が見つからなければ、合法手からランダムに選択
+          let moves = getAllLegalMoves(-1, board, hands);
+          if (moves.length > 0) {
+            makeMove(moves[0]);
+          }
         }
       }
 
-      // minimax 関数（isMaximizing = true のとき AI の手番）
-      function minimax(bdState, hndsState, depth, isMaximizing, alpha, beta) {
-        if (depth === 0 || isGameOver(bdState)) {
-          return evaluateBoard(bdState, hndsState);
+      // 反復深化探索（指定時間内または最大深度に達するまで）
+      function iterativeDeepening(bd, hnds, maximizing) {
+        searchStartTime = Date.now();
+        let bestMove = null;
+        let currentDepth = 1;
+        while (Date.now() - searchStartTime < timeLimit && currentDepth <= maxSearchDepth) {
+          let result = searchWithMove(bd, hnds, currentDepth, -Infinity, Infinity, maximizing);
+          if (result.move != null) {
+            bestMove = result.move;
+          }
+          currentDepth++;
         }
-        if (isMaximizing) {
+        return bestMove;
+      }
+
+      // α−β 探索＋静態延長、かつ TT を利用する探索関数
+      // 戻り値: { score: 数値, move: 最善手 (探索深度 > 0 の場合のみ) }
+      function searchWithMove(bd, hnds, depth, alpha, beta, maximizing) {
+        if (Date.now() - searchStartTime > timeLimit) {
+          return { score: evaluateBoard(bd, hnds), move: null };
+        }
+        let hash = computeHash(bd, hnds, maximizing ? -1 : 1);
+        if (transpositionTable.has(hash) && transpositionTable.get(hash).depth >= depth) {
+          let entry = transpositionTable.get(hash);
+          return { score: entry.score, move: entry.move };
+        }
+        if (depth === 0) {
+          let qs = quiescence(bd, hnds, alpha, beta, maximizing);
+          return { score: qs, move: null };
+        }
+        let bestMove = null;
+        let moves = getAllLegalMoves(maximizing ? -1 : 1, bd, hnds);
+        // ムーブオーダリング：キャプチャー手を優先
+        moves.sort((a, b) => {
+          let aCap = (!a.drop && bd[a.to.y][a.to.x] != null) ? pieceValue(bd[a.to.y][a.to.x].type) : 0;
+          let bCap = (!b.drop && bd[b.to.y][b.to.x] != null) ? pieceValue(bd[b.to.y][b.to.x].type) : 0;
+          return bCap - aCap;
+        });
+        if (moves.length === 0) {
+          return { score: evaluateBoard(bd, hnds), move: null };
+        }
+        if (maximizing) {
           let maxEval = -Infinity;
-          let moves = getAllLegalMoves(-1, bdState, hndsState);
           for (let move of moves) {
-            let bdCopy = cloneBoard(bdState);
-            let hndsCopy = cloneHands(hndsState);
+            let bdCopy = cloneBoard(bd);
+            let hndsCopy = cloneHands(hnds);
             simulateMove(bdCopy, hndsCopy, move);
-            let evalVal = minimax(bdCopy, hndsCopy, depth - 1, false, alpha, beta);
-            maxEval = max(maxEval, evalVal);
-            alpha = max(alpha, evalVal);
+            let result = searchWithMove(bdCopy, hndsCopy, depth - 1, alpha, beta, false);
+            if (result.score > maxEval) {
+              maxEval = result.score;
+              bestMove = move;
+            }
+            alpha = Math.max(alpha, result.score);
             if (beta <= alpha) break;
           }
-          return maxEval;
+          transpositionTable.set(hash, { score: maxEval, move: bestMove, depth: depth });
+          return { score: maxEval, move: bestMove };
         } else {
           let minEval = Infinity;
-          let moves = getAllLegalMoves(1, bdState, hndsState);
           for (let move of moves) {
-            let bdCopy = cloneBoard(bdState);
-            let hndsCopy = cloneHands(hndsState);
+            let bdCopy = cloneBoard(bd);
+            let hndsCopy = cloneHands(hnds);
             simulateMove(bdCopy, hndsCopy, move);
-            let evalVal = minimax(bdCopy, hndsCopy, depth - 1, true, alpha, beta);
-            minEval = min(minEval, evalVal);
-            beta = min(beta, evalVal);
+            let result = searchWithMove(bdCopy, hndsCopy, depth - 1, alpha, beta, true);
+            if (result.score < minEval) {
+              minEval = result.score;
+              bestMove = move;
+            }
+            beta = Math.min(beta, result.score);
             if (beta <= alpha) break;
           }
-          return minEval;
+          transpositionTable.set(hash, { score: minEval, move: bestMove, depth: depth });
+          return { score: minEval, move: bestMove };
         }
       }
 
-      // 盤上および持ち駒の全合法手を生成
-      function getAllLegalMoves(owner, bd, hnds) {
-        let moves = [];
-        for (let y = 0; y < 9; y++) {
-          for (let x = 0; x < 9; x++) {
-            let p = bd[y][x];
-            if (p && p.owner === owner) {
-              let ms = getLegalMoves(x, y, bd, owner);
-              for (let m of ms) {
-                moves.push(m);
-              }
-            }
+      // 簡易な静態延長（Quiescence Search）
+      // キャプチャー手のみを対象に延長探索
+      function quiescence(bd, hnds, alpha, beta, maximizing) {
+        let stand_pat = evaluateBoard(bd, hnds);
+        if (maximizing) {
+          if (stand_pat >= beta) return beta;
+          if (alpha < stand_pat) alpha = stand_pat;
+        } else {
+          if (stand_pat <= alpha) return alpha;
+          if (beta > stand_pat) beta = stand_pat;
+        }
+        let moves = getAllLegalMoves(maximizing ? -1 : 1, bd, hnds);
+        // キャプチャー手のみ（打は除く）
+        moves = moves.filter(m => !m.drop && bd[m.to.y][m.to.x] != null);
+        // シンプルなムーブオーダリング
+        moves.sort((a, b) => {
+          let aCap = bd[a.to.y][a.to.x] ? pieceValue(bd[a.to.y][a.to.x].type) : 0;
+          let bCap = bd[b.to.y][b.to.x] ? pieceValue(bd[b.to.y][b.to.x].type) : 0;
+          return bCap - aCap;
+        });
+        for (let move of moves) {
+          let bdCopy = cloneBoard(bd);
+          let hndsCopy = cloneHands(hnds);
+          simulateMove(bdCopy, hndsCopy, move);
+          let score = quiescence(bdCopy, hndsCopy, alpha, beta, !maximizing);
+          if (maximizing) {
+            if (score > alpha) alpha = score;
+            if (alpha >= beta) return beta;
+          } else {
+            if (score < beta) beta = score;
+            if (beta <= alpha) return alpha;
           }
         }
-        let hand = hnds[owner.toString()];
-        for (let p of hand) {
-          let dropMs = getDropMoves(owner, bd, hand, p.type);
-          for (let m of dropMs) {
-            moves.push(m);
-          }
-        }
-        return moves;
+        return maximizing ? alpha : beta;
       }
 
-      // 簡易評価関数（駒の価値の総和）
-      function evaluateBoard(bd, hnds) {
+      // 駒の価値（評価関数と同じ値）
+      function pieceValue(type) {
         let values = {
           K: 10000,
           R: 500,
@@ -673,31 +713,32 @@
           L: 200,
           P: 100,
         };
-        let score = 0;
+        return values[type] || 0;
+      }
+
+      // 局面ハッシュ計算（簡易実装）
+      function computeHash(bd, hnds, currentPlayer) {
+        let hash = "";
         for (let y = 0; y < 9; y++) {
           for (let x = 0; x < 9; x++) {
             let p = bd[y][x];
             if (p) {
-              let val = values[p.type] || 0;
-              if (p.promoted) {
-                val += 50;
-              }
-              score += p.owner === -1 ? val : -val;
+              hash += p.type + (p.promoted ? "+" : "") + (p.owner === 1 ? "1" : "-1") + ",";
+            } else {
+              hash += ".,";
             }
           }
         }
-        for (let p of hnds["-1"]) {
-          score += values[p.type] || 0;
-        }
+        hash += "H1:";
         for (let p of hnds["1"]) {
-          score -= values[p.type] || 0;
+          hash += p.type + (p.promoted ? "+" : "") + ",";
         }
-        return score;
-      }
-
-      // ゲーム終了判定：どちらかの王が存在しなければ終了
-      function isGameOver(bd) {
-        return !findKing(bd, 1) || !findKing(bd, -1);
+        hash += "H-1:";
+        for (let p of hnds["-1"]) {
+          hash += p.type + (p.promoted ? "+" : "") + ",";
+        }
+        hash += "P:" + currentPlayer;
+        return hash;
       }
 
       // 盤面のディープコピー
@@ -719,9 +760,67 @@
       // 持ち駒のコピー
       function cloneHands(oldHnds) {
         let newHnds = { "1": [], "-1": [] };
-        newHnds["1"] = oldHnds["1"].map((p) => Object.assign({}, p));
-        newHnds["-1"] = oldHnds["-1"].map((p) => Object.assign({}, p));
+        newHnds["1"] = oldHnds["1"].map(p => Object.assign({}, p));
+        newHnds["-1"] = oldHnds["-1"].map(p => Object.assign({}, p));
         return newHnds;
+      }
+
+      // 評価関数（盤上および持ち駒の単純な駒価の総和）
+      function evaluateBoard(bd, hnds) {
+        let values = {
+          K: 10000,
+          R: 500,
+          B: 450,
+          G: 350,
+          S: 300,
+          N: 250,
+          L: 200,
+          P: 100,
+        };
+        let score = 0;
+        for (let y = 0; y < 9; y++) {
+          for (let x = 0; x < 9; x++) {
+            let p = bd[y][x];
+            if (p) {
+              let val = values[p.type] || 0;
+              if (p.promoted) {
+                val += 50;
+              }
+              score += (p.owner === -1 ? val : -val);
+            }
+          }
+        }
+        for (let p of hnds["-1"]) {
+          score += values[p.type] || 0;
+        }
+        for (let p of hnds["1"]) {
+          score -= values[p.type] || 0;
+        }
+        return score;
+      }
+
+      // 全合法手生成（盤上の移動＋持ち駒の打）
+      function getAllLegalMoves(owner, bd, hnds) {
+        let moves = [];
+        for (let y = 0; y < 9; y++) {
+          for (let x = 0; x < 9; x++) {
+            let p = bd[y][x];
+            if (p && p.owner === owner) {
+              let ms = getLegalMoves(x, y, bd, owner);
+              for (let m of ms) {
+                moves.push(m);
+              }
+            }
+          }
+        }
+        let hand = hnds[owner.toString()];
+        for (let p of hand) {
+          let dropMs = getDropMoves(owner, bd, hand, p.type);
+          for (let m of dropMs) {
+            moves.push(m);
+          }
+        }
+        return moves;
       }
     </script>
   </body>
