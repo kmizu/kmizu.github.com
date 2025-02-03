@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>JavaScript Prolog インタプリター</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f2f2f2;
+      line-height: 1.6;
+    }
+    h1 {
+      color: #333;
+    }
+    textarea {
+      width: 100%;
+      height: 150px;
+      font-family: monospace;
+      font-size: 14px;
+      padding: 8px;
+      box-sizing: border-box;
+      margin-bottom: 10px;
+    }
+    input[type="text"] {
+      width: 80%;
+      font-family: monospace;
+      font-size: 14px;
+      padding: 8px;
+      box-sizing: border-box;
+      margin-bottom: 10px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    #output {
+      background-color: #fff;
+      border: 1px solid #ccc;
+      padding: 10px;
+      min-height: 50px;
+      margin-top: 10px;
+    }
+    .sample {
+      font-size: 0.9em;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <h1>JavaScript Prolog インタプリター</h1>
+  <p>
+    以下のテキストエリアに Prolog プログラム（事実やルール）を入力してください。  
+    例:
+    <code>
+      parent(john, mary).<br>
+      parent(mary, susan).<br>
+      grandparent(X, Y) :- parent(X, Z), parent(Z, Y).
+    </code>
+  </p>
+  <textarea id="programInput">
+parent(john, mary).
+parent(mary, susan).
+grandparent(X, Y) :- parent(X, Z), parent(Z, Y).
+  </textarea>
+
+  <p>
+    クエリを入力してください（例: <code>grandparent(john, Y).</code>）
+  </p>
+  <input type="text" id="queryInput" placeholder="クエリを入力..." value="grandparent(john, Y).">
+  <button id="runButton">クエリを実行</button>
+
+  <h2>結果</h2>
+  <div id="output"></div>
+
+  <script>
+    // ──────────────────────────────
+    // トークナイザー
+    // ──────────────────────────────
+    function tokenize(input) {
+      const tokens = [];
+      // 正規表現で、:-、識別子、数字、括弧や句読点を抽出
+      const regex = /\s*(?:(:-)|([A-Za-z_][A-Za-z0-9_]*)|([0-9]+)|([().,?])|(:))/g;
+      let match;
+      while ((match = regex.exec(input)) !== null) {
+        if (match[1]) {
+          tokens.push({ type: 'symbol', value: ':-' });
+        } else if (match[2]) {
+          tokens.push({ type: 'identifier', value: match[2] });
+        } else if (match[3]) {
+          tokens.push({ type: 'number', value: match[3] });
+        } else if (match[4]) {
+          tokens.push({ type: 'punctuation', value: match[4] });
+        } else if (match[5]) {
+          tokens.push({ type: 'colon', value: ':' });
+        }
+      }
+      return tokens;
+    }
+
+    // ──────────────────────────────
+    // パーサー
+    // ──────────────────────────────
+    class Parser {
+      constructor(tokens) {
+        this.tokens = tokens;
+        this.pos = 0;
+      }
+
+      peek() {
+        return this.tokens[this.pos];
+      }
+
+      consume(expected) {
+        const token = this.tokens[this.pos];
+        if (!token || (expected && token.value !== expected)) {
+          throw new Error("予期しないトークン: " + JSON.stringify(token) + "（期待: " + expected + "）");
+        }
+        this.pos++;
+        return token;
+      }
+
+      // 句（節）のパース：事実またはルール
+      parseClause() {
+        if (this.pos >= this.tokens.length) return null;
+        const head = this.parseTerm();
+        let body = [];
+        const token = this.peek();
+        if (token && token.type === 'symbol' && token.value === ':-') {
+          this.consume(':-');
+          body = this.parseTermList();
+        }
+        // 終了記号としてピリオド（.）を期待
+        this.consume('.');
+        return { head, body };
+      }
+
+      parseTermList() {
+        const terms = [];
+        terms.push(this.parseTerm());
+        while (this.peek() && this.peek().value === ',') {
+          this.consume(',');
+          terms.push(this.parseTerm());
+        }
+        return terms;
+      }
+
+      parseTerm() {
+        let token = this.peek();
+        if (!token) throw new Error("項のパース中に入力が終了しました");
+        if (token.type === 'identifier' || token.type === 'number') {
+          this.consume();
+          let term = null;
+          // 次が '(' なら複合項とみなす
+          if (this.peek() && this.peek().value === '(') {
+            this.consume('(');
+            const args = [];
+            if (this.peek() && this.peek().value !== ')') {
+              args.push(this.parseTerm());
+              while (this.peek() && this.peek().value === ',') {
+                this.consume(',');
+                args.push(this.parseTerm());
+              }
+            }
+            this.consume(')');
+            term = { type: 'compound', functor: token.value, args: args };
+          } else {
+            // Prolog では、変数は大文字または _ で始まる
+            if (/^[A-Z_]/.test(token.value)) {
+              term = { type: 'variable', name: token.value };
+            } else {
+              term = { type: token.type === 'number' ? 'number' : 'atom', value: token.value };
+            }
+          }
+          return term;
+        } else if (token.value === '(') {
+          // 括弧で囲まれた項
+          this.consume('(');
+          const term = this.parseTerm();
+          this.consume(')');
+          return term;
+        } else {
+          throw new Error("項のパース中に予期しないトークン: " + JSON.stringify(token));
+        }
+      }
+    }
+
+    function parseProgram(input) {
+      const tokens = tokenize(input);
+      const parser = new Parser(tokens);
+      const clauses = [];
+      while (parser.pos < tokens.length) {
+        // ピリオドだけのトークンは読み飛ばす
+        if (parser.peek().value === '.') {
+          parser.consume('.');
+          continue;
+        }
+        const clause = parser.parseClause();
+        if (clause) clauses.push(clause);
+      }
+      return clauses;
+    }
+
+    function parseQuery(input) {
+      // クエリは項のリストとしてパース（末尾に '.' や '?' があってもよい）
+      const tokens = tokenize(input);
+      const parser = new Parser(tokens);
+      const query = parser.parseTermList();
+      if (parser.peek() && (parser.peek().value === '.' || parser.peek().value === '?')) {
+        parser.consume(parser.peek().value);
+      }
+      return query;
+    }
+
+    // ──────────────────────────────
+    // Unification（項の照合）
+    // ──────────────────────────────
+    function isVariable(term) {
+      return term.type === 'variable';
+    }
+
+    function isCompound(term) {
+      return term.type === 'compound';
+    }
+
+    // 代入を項に適用する
+    function applySubstitution(term, subs) {
+      if (isVariable(term)) {
+        if (subs[term.name]) {
+          return applySubstitution(subs[term.name], subs);
+        } else {
+          return term;
+        }
+      } else if (isCompound(term)) {
+        return {
+          type: 'compound',
+          functor: term.functor,
+          args: term.args.map(arg => applySubstitution(arg, subs))
+        };
+      } else {
+        // atom や number
+        return term;
+      }
+    }
+
+    function unify(x, y, subs) {
+      subs = Object.assign({}, subs); // 代入のシャローコピー
+      x = applySubstitution(x, subs);
+      y = applySubstitution(y, subs);
+      if (isVariable(x)) {
+        return unifyVar(x, y, subs);
+      } else if (isVariable(y)) {
+        return unifyVar(y, x, subs);
+      } else if (x.type === y.type) {
+        if (x.type === 'atom' || x.type === 'number') {
+          return (x.value === y.value) ? subs : null;
+        } else if (x.type === 'compound') {
+          if (x.functor !== y.functor || x.args.length !== y.args.length) return null;
+          for (let i = 0; i < x.args.length; i++) {
+            subs = unify(x.args[i], y.args[i], subs);
+            if (subs === null) return null;
+          }
+          return subs;
+        }
+      }
+      return null;
+    }
+
+    function unifyVar(variable, x, subs) {
+      if (occursCheck(variable, x, subs)) return null;
+      subs[variable.name] = x;
+      return subs;
+    }
+
+    function occursCheck(variable, term, subs) {
+      term = applySubstitution(term, subs);
+      if (isVariable(term)) {
+        return term.name === variable.name;
+      } else if (isCompound(term)) {
+        return term.args.some(arg => occursCheck(variable, arg, subs));
+      }
+      return false;
+    }
+
+    // ──────────────────────────────
+    // 変数の標準化（名前衝突を避けるためのリネーム）
+    // ──────────────────────────────
+    let varCounter = 0;
+    function standardizeApart(clause) {
+      const mapping = {};
+      function rename(term) {
+        if (isVariable(term)) {
+          if (!mapping[term.name]) {
+            mapping[term.name] = { type: 'variable', name: term.name + "_" + (varCounter++) };
+          }
+          return mapping[term.name];
+        } else if (isCompound(term)) {
+          return {
+            type: 'compound',
+            functor: term.functor,
+            args: term.args.map(rename)
+          };
+        } else {
+          return term;
+        }
+      }
+      return {
+        head: rename(clause.head),
+        body: clause.body.map(rename)
+      };
+    }
+
+    // ──────────────────────────────
+    // 解導出（深さ優先探索）
+    // ──────────────────────────────
+    function prove(goals, clauses, subs, callback) {
+      if (goals.length === 0) {
+        callback(subs);
+      } else {
+        const goal = goals[0];
+        const restGoals = goals.slice(1);
+        for (let clause of clauses) {
+          const clauseCopy = standardizeApart(clause);
+          const newSubs = unify(goal, clauseCopy.head, subs);
+          if (newSubs !== null) {
+            const newGoals = clauseCopy.body.concat(restGoals)
+                                .map(g => applySubstitution(g, newSubs));
+            prove(newGoals, clauses, newSubs, callback);
+          }
+        }
+      }
+    }
+
+    // ──────────────────────────────
+    // 結果の文字列変換（項→文字列）
+    // ──────────────────────────────
+    function termToString(term) {
+      if (isVariable(term)) {
+        return term.name;
+      } else if (isCompound(term)) {
+        return term.functor + "(" + term.args.map(termToString).join(", ") + ")";
+      } else if (term.type === 'atom' || term.type === 'number') {
+        return term.value;
+      }
+      return "";
+    }
+
+    function formatSubstitution(subs) {
+      const entries = [];
+      for (let key in subs) {
+        entries.push(key + " = " + termToString(applySubstitution(subs[key], subs)));
+      }
+      return entries.join(", ");
+    }
+
+    // ──────────────────────────────
+    // UI との連携
+    // ──────────────────────────────
+    document.getElementById("runButton").addEventListener("click", () => {
+      const programText = document.getElementById("programInput").value;
+      const queryText = document.getElementById("queryInput").value;
+      let clauses, query;
+      try {
+        clauses = parseProgram(programText);
+      } catch(e) {
+        document.getElementById("output").innerText = "プログラムの解析エラー: " + e.message;
+        return;
+      }
+      try {
+        query = parseQuery(queryText);
+      } catch(e) {
+        document.getElementById("output").innerText = "クエリの解析エラー: " + e.message;
+        return;
+      }
+
+      let solutions = [];
+      prove(query, clauses, {}, (subs) => {
+        solutions.push(subs);
+      });
+
+      let outputText = "";
+      if (solutions.length === 0) {
+        outputText = "解なし";
+      } else {
+        solutions.forEach((sol, idx) => {
+          outputText += "解 " + (idx + 1) + ": " + formatSubstitution(sol) + "<br>";
+        });
+      }
+      document.getElementById("output").innerHTML = outputText;
+    });
+  </script>
+</body>
+</html>
