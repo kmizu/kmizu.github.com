@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QRコードジェネレーター</title>
+  <style>
+    /* シンプルでスタイリッシュなデザイン */
+    body {
+      background: #f7f7f7;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: #fff;
+      padding: 20px 30px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      max-width: 400px;
+      width: 90%;
+    }
+    h1 {
+      margin-bottom: 20px;
+      font-size: 24px;
+      color: #333;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 10px 5px;
+      border: none;
+      background-color: #3498db;
+      color: #fff;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    button:hover {
+      background-color: #2980b9;
+    }
+    #qrcode {
+      margin: 20px auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>QRコードジェネレーター</h1>
+    <input type="text" id="urlInput" placeholder="URLを入力">
+    <select id="sizeSelect">
+      <option value="256">256 x 256</option>
+      <option value="512">512 x 512</option>
+    </select>
+    <button id="generateBtn">QRコード生成</button>
+    <div id="qrcode"></div>
+    <button id="saveBtn">画像を保存</button>
+  </div>
+
+  <!-- QRCode.js ライブラリ（CDNより読み込み） -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script>
+    // 「QRコード生成」ボタンの処理
+    document.getElementById("generateBtn").addEventListener("click", function() {
+      var url = document.getElementById("urlInput").value.trim();
+      var size = parseInt(document.getElementById("sizeSelect").value, 10);
+      if (url === "") {
+        alert("URLを入力してください！");
+        return;
+      }
+      // 前回生成したQRコードをクリア
+      var qrCodeContainer = document.getElementById("qrcode");
+      qrCodeContainer.innerHTML = "";
+      
+      // QRコード生成
+      new QRCode(qrCodeContainer, {
+        text: url,
+        width: size,
+        height: size,
+        colorDark : "#000000",
+        colorLight : "#ffffff",
+        correctLevel : QRCode.CorrectLevel.H
+      });
+    });
+
+    // 「画像を保存」ボタンの処理
+    document.getElementById("saveBtn").addEventListener("click", function() {
+      var qrCodeContainer = document.getElementById("qrcode");
+      // canvas要素を取得（QRCode.jsはモダンブラウザではcanvasを生成します）
+      var canvas = qrCodeContainer.querySelector("canvas");
+      if (canvas) {
+        var dataURL = canvas.toDataURL("image/png");
+        // 一時的なリンクを作成してクリックすることでダウンロードを実行
+        var a = document.createElement("a");
+        a.href = dataURL;
+        a.download = "qrcode.png";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } else {
+        // canvasがない場合、imgタグから取得（念のためのフォールバック）
+        var img = qrCodeContainer.querySelector("img");
+        if (img) {
+          var a = document.createElement("a");
+          a.href = img.src;
+          a.download = "qrcode.png";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        } else {
+          alert("QRコードが生成されていません！");
+        }
+      }
+    });
+  </script>
+</body>
+</html>
