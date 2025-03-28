@@ -1,14 +1,172 @@
-<html>
-        <head>
-                <title>アプリ一覧</title>
-        </head>
-        <body>
-                <ul>
-                        <li>
-                                <a href="char-counter/index.html">文字数カウンター</a>
-                                <a href="o3-prolog/index.html">Prologインタプリター</a>
-                                <a href="txt2qr/index.html">QRコードジェネレーター</a>
-                        </li>
-                </ul>
-        </body>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>アプリ一覧 | My Tools Collection</title>
+    <style>
+        :root {
+            --primary-color: #3d5afe;
+            --secondary-color: #536dfe;
+            --text-color: #333;
+            --bg-color: #f5f7fa;
+            --card-bg: #ffffff;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --hover-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+            --border-radius: 12px;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+        }
+        
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 2rem;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.8rem;
+            color: var(--primary-color);
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #666;
+            margin-bottom: 1rem;
+        }
+        
+        .app-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .app-card {
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            position: relative;
+        }
+        
+        .app-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--hover-shadow);
+        }
+        
+        /* アイコン部分は削除しました */
+        
+        .app-info {
+            padding: 1.5rem;
+        }
+        
+        .app-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--primary-color);
+        }
+        
+        .app-description {
+            color: #666;
+            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+        }
+        
+        .app-link {
+            display: inline-block;
+            padding: 0.6rem 1.2rem;
+            background-color: var(--primary-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 30px;
+            font-weight: 500;
+            transition: background-color 0.2s ease;
+        }
+        
+        .app-link:hover {
+            background-color: var(--secondary-color);
+        }
+        
+        footer {
+            margin-top: 4rem;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #777;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 1.5rem;
+            }
+            
+            .app-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>My Tools Collection</h1>
+        <p class="subtitle">便利なウェブアプリケーションツール集</p>
+    </header>
+    
+    <main class="app-container">
+        <div class="app-card">
+            <div class="app-info">
+                <h2 class="app-title">文字数カウンター</h2>
+                <p class="app-description">テキストの文字数、単語数、行数を瞬時にカウントする便利ツールです。</p>
+                <a href="char-counter/index.html" class="app-link">開く</a>
+            </div>
+        </div>
+        
+        <div class="app-card">
+            <div class="app-info">
+                <h2 class="app-title">Prologインタプリター</h2>
+                <p class="app-description">ブラウザ上でPrologコードを実行できるインタプリターです。</p>
+                <a href="o3-prolog/index.html" class="app-link">開く</a>
+            </div>
+        </div>
+        
+        <div class="app-card">
+            <div class="app-info">
+                <h2 class="app-title">QRコードジェネレーター</h2>
+                <p class="app-description">テキストやURLから簡単にQRコードを生成できるツールです。</p>
+                <a href="txt2qr/index.html" class="app-link">開く</a>
+            </div>
+        </div>
+
+        <div class="app-card">
+            <div class="app-info">
+                <h2 class="app-title">将棋</h2>
+                <p class="app-description">シンプルな将棋ゲームです</p>
+                <a href="shogi/index.html" class="app-link">開く</a>
+            </div>
+        </div>
+    </main>
+    
+    <footer>
+        <p>&copy; 2025 My Tools Collection. All rights reserved.</p>
+    </footer>
+</body>
 </html>
