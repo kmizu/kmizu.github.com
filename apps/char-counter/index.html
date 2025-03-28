@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>リアルタイム文字数カウンター</title>
+    <style>
+        :root {
+            --primary-color: #6366f1;
+            --secondary-color: #4f46e5;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-color: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .header {
+            padding: 1.5rem;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            text-align: center;
+            position: relative;
+        }
+
+        .title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 1.5rem;
+        }
+
+        .textarea-wrapper {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-color);
+            font-size: 1rem;
+            resize: vertical;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+
+        .stats-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            padding: 1rem 0;
+        }
+
+        .stat-card {
+            flex: 1;
+            min-width: 150px;
+            background-color: #f1f5f9;
+            padding: 1rem;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .stat-value .counter {
+            min-width: 2.5ch;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        .buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        button {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .copy-btn {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .copy-btn:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .clear-btn {
+            background-color: #e2e8f0;
+            color: var(--text-color);
+        }
+
+        .clear-btn:hover {
+            background-color: #cbd5e1;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #10b981;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transform: translateY(-100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .notification.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        @media (max-width: 768px) {
+            .stats-container {
+                flex-direction: column;
+            }
+
+            .stat-card {
+                width: 100%;
+            }
+        }
+
+        .animated-counter {
+            position: relative;
+            display: inline-block;
+        }
+
+        .increment-animation {
+            animation: popIn 0.3s ease-out;
+        }
+
+        @keyframes popIn {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.2);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">リアルタイム文字数カウンター</h1>
+            <p class="subtitle">テキストを入力すると、リアルタイムで文字数をカウントします</p>
+        </div>
+        <div class="content">
+            <div class="textarea-wrapper">
+                <textarea id="text-input" placeholder="ここにテキストを入力してください..."></textarea>
+            </div>
+            
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-value">
+                        <span id="char-count" class="counter">0</span>
+                    </div>
+                    <div class="stat-label">文字数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">
+                        <span id="word-count" class="counter">0</span>
+                    </div>
+                    <div class="stat-label">単語数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">
+                        <span id="line-count" class="counter">0</span>
+                    </div>
+                    <div class="stat-label">行数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">
+                        <span id="byte-count" class="counter">0</span>
+                    </div>
+                    <div class="stat-label">バイト数</div>
+                </div>
+            </div>
+            
+            <div class="buttons">
+                <button class="copy-btn" id="copy-btn">テキストをコピー</button>
+                <button class="clear-btn" id="clear-btn">クリア</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="notification" id="notification">テキストをコピーしました</div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const textInput = document.getElementById('text-input');
+            const charCount = document.getElementById('char-count');
+            const wordCount = document.getElementById('word-count');
+            const lineCount = document.getElementById('line-count');
+            const byteCount = document.getElementById('byte-count');
+            const copyBtn = document.getElementById('copy-btn');
+            const clearBtn = document.getElementById('clear-btn');
+            const notification = document.getElementById('notification');
+            
+            // 文字数をアニメーションさせながらインクリメントする関数
+            function animateCounter(element, startValue, endValue, duration = 300) {
+                // すでに目標値に達している場合は何もしない
+                if (parseInt(element.textContent) === endValue) return;
+                
+                const steps = Math.max(1, Math.floor(duration / 16)); // 16msはだいたい60FPS
+                const increment = (endValue - startValue) / steps;
+                let current = startValue;
+                let step = 0;
+                
+                element.classList.add('increment-animation');
+                
+                const updateCounter = () => {
+                    step++;
+                    current += increment;
+                    
+                    // 最後のステップでは必ず目標値を設定
+                    if (step >= steps) {
+                        element.textContent = endValue;
+                        element.classList.remove('increment-animation');
+                        return;
+                    }
+                    
+                    element.textContent = Math.round(current);
+                    requestAnimationFrame(updateCounter);
+                };
+                
+                requestAnimationFrame(updateCounter);
+            }
+            
+            // テキスト解析関数
+            function analyzeText() {
+                const text = textInput.value;
+                
+                // 文字数
+                const chars = text.length;
+                
+                // 単語数 (空白で区切られた部分を単語としてカウント)
+                const words = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
+                
+                // 行数
+                const lines = text === '' ? 0 : text.split('\n').length;
+                
+                // バイト数 (UTF-8でのバイト数を計算)
+                const bytes = new TextEncoder().encode(text).length;
+                
+                // カウンターをアニメーションで更新
+                animateCounter(charCount, parseInt(charCount.textContent), chars);
+                animateCounter(wordCount, parseInt(wordCount.textContent), words);
+                animateCounter(lineCount, parseInt(lineCount.textContent), lines);
+                animateCounter(byteCount, parseInt(byteCount.textContent), bytes);
+            }
+            
+            // イベントリスナー設定
+            textInput.addEventListener('input', analyzeText);
+            
+            copyBtn.addEventListener('click', function() {
+                if (textInput.value.trim() === '') return;
+                
+                // テキストをクリップボードにコピー
+                textInput.select();
+                document.execCommand('copy');
+                
+                // 通知を表示
+                notification.classList.add('show');
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 2000);
+            });
+            
+            clearBtn.addEventListener('click', function() {
+                textInput.value = '';
+                analyzeText();
+                textInput.focus();
+            });
+            
+            // 初期化
+            analyzeText();
+        });
+    </script>
+</body>
+</html>
