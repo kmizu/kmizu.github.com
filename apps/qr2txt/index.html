@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QRコード → テキスト変換</title>
+  <style>
+    body {
+      background: #f7f7f7;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    .container {
+      background: #fff;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      max-width: 500px;
+      width: 100%;
+    }
+    h1 {
+      margin-bottom: 20px;
+      font-size: 24px;
+      color: #333;
+    }
+    .upload-area {
+      border: 2px dashed #3498db;
+      border-radius: 8px;
+      padding: 40px 20px;
+      margin: 20px 0;
+      background: #f8f9fa;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+    .upload-area:hover {
+      background: #e9ecef;
+      border-color: #2980b9;
+    }
+    .upload-area.dragover {
+      background: #e3f2fd;
+      border-color: #2196f3;
+    }
+    .upload-text {
+      color: #666;
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+    .upload-hint {
+      color: #999;
+      font-size: 14px;
+    }
+    input[type="file"] {
+      display: none;
+    }
+    .result-area {
+      margin-top: 20px;
+      display: none;
+    }
+    .result-label {
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 10px;
+      display: block;
+    }
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      resize: vertical;
+      box-sizing: border-box;
+    }
+    .button-group {
+      margin-top: 15px;
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+    button {
+      padding: 10px 20px;
+      border: none;
+      background-color: #3498db;
+      color: #fff;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    button:hover {
+      background-color: #2980b9;
+    }
+    button:disabled {
+      background-color: #bdc3c7;
+      cursor: not-allowed;
+    }
+    .error-message {
+      color: #e74c3c;
+      margin-top: 10px;
+      display: none;
+    }
+    .preview-image {
+      max-width: 200px;
+      max-height: 200px;
+      margin: 20px auto;
+      display: none;
+    }
+    canvas {
+      display: none;
+    }
+    .paste-input {
+      position: absolute;
+      left: -9999px;
+      opacity: 0;
+      width: 1px;
+      height: 1px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>QRコード → テキスト変換</h1>
+    
+    <div class="upload-area" id="uploadArea">
+      <div class="upload-text">QRコード画像をドロップまたはクリック</div>
+      <div class="upload-hint">PNG, JPG, GIF形式に対応 | 右クリック→貼り付け または Ctrl+V</div>
+      <input type="text" class="paste-input" id="pasteInput" value="" />
+    </div>
+    
+    <input type="file" id="fileInput" accept="image/*">
+    
+    <img class="preview-image" id="previewImage">
+    
+    <div class="error-message" id="errorMessage"></div>
+    
+    <div class="result-area" id="resultArea">
+      <label class="result-label">抽出されたテキスト：</label>
+      <textarea id="resultText" readonly></textarea>
+      <div class="button-group">
+        <button id="copyBtn">コピー</button>
+        <button id="clearBtn">クリア</button>
+      </div>
+    </div>
+    
+    <canvas id="canvas"></canvas>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+  <script>
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const previewImage = document.getElementById('previewImage');
+    const resultArea = document.getElementById('resultArea');
+    const resultText = document.getElementById('resultText');
+    const errorMessage = document.getElementById('errorMessage');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const copyBtn = document.getElementById('copyBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const pasteInput = document.getElementById('pasteInput');
+
+    // アップロードエリアのクリックイベント
+    uploadArea.addEventListener('click', () => {
+      fileInput.click();
+    });
+
+    // ファイル選択イベント
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        processImage(file);
+      }
+    });
+
+    // ドラッグ＆ドロップ対応
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.classList.add('dragover');
+    });
+
+    uploadArea.addEventListener('dragleave', () => {
+      uploadArea.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+      
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith('image/')) {
+        processImage(file);
+      }
+    });
+
+    // クリップボードからの貼り付け対応
+    document.addEventListener('paste', async (e) => {
+      e.preventDefault();
+      
+      // クリップボードのアイテムをチェック
+      const items = Array.from(e.clipboardData.items);
+      
+      // 画像アイテムを探す
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          const file = item.getAsFile();
+          if (file) {
+            processImage(file);
+            return;
+          }
+        }
+      }
+      
+      // もしクリップボードAPIが使えるなら、より詳細な読み取りを試みる
+      if (navigator.clipboard && navigator.clipboard.read) {
+        try {
+          const clipboardItems = await navigator.clipboard.read();
+          for (const clipboardItem of clipboardItems) {
+            const types = clipboardItem.types;
+            for (const type of types) {
+              if (type.startsWith('image/')) {
+                const blob = await clipboardItem.getType(type);
+                const file = new File([blob], 'clipboard-image.png', { type: blob.type });
+                processImage(file);
+                return;
+              }
+            }
+          }
+        } catch (err) {
+          console.log('Clipboard API failed, falling back to standard paste');
+        }
+      }
+    });
+
+    // ページ全体でCtrl+Vをキャッチ
+    uploadArea.addEventListener('click', () => {
+      fileInput.click();
+      // フォーカスを設定してペーストイベントを受け取れるようにする
+      uploadArea.focus();
+    });
+
+    // uploadAreaにtabindexを追加してフォーカス可能にする
+    uploadArea.setAttribute('tabindex', '0');
+    
+    // 右クリックメニューへの対応
+    uploadArea.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      // 隠しインプットにフォーカスを当てて貼り付け可能にする
+      pasteInput.focus();
+      pasteInput.select();
+      
+      // ブラウザのコンテキストメニューを表示
+      setTimeout(() => {
+        const event = new MouseEvent('contextmenu', {
+          bubbles: true,
+          cancelable: true,
+          clientX: e.clientX,
+          clientY: e.clientY
+        });
+        pasteInput.dispatchEvent(event);
+      }, 0);
+    });
+    
+    // 隠しインプットへの貼り付けを監視
+    pasteInput.addEventListener('paste', async (e) => {
+      e.preventDefault();
+      
+      const items = Array.from(e.clipboardData.items);
+      
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          const file = item.getAsFile();
+          if (file) {
+            processImage(file);
+            pasteInput.value = '';
+            return;
+          }
+        }
+      }
+    });
+
+    // 画像処理
+    function processImage(file) {
+      const reader = new FileReader();
+      
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          // プレビュー表示
+          previewImage.src = e.target.result;
+          previewImage.style.display = 'block';
+          
+          // canvasに描画
+          canvas.width = img.width;
+          canvas.height = img.height;
+          ctx.drawImage(img, 0, 0);
+          
+          // QRコード読み取り
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const code = jsQR(imageData.data, imageData.width, imageData.height);
+          
+          if (code) {
+            showResult(code.data);
+            hideError();
+          } else {
+            showError('QRコードが検出されませんでした。別の画像をお試しください。');
+            hideResult();
+          }
+        };
+        img.src = e.target.result;
+      };
+      
+      reader.readAsDataURL(file);
+    }
+
+    // 結果表示
+    function showResult(text) {
+      resultText.value = text;
+      resultArea.style.display = 'block';
+    }
+
+    function hideResult() {
+      resultArea.style.display = 'none';
+      resultText.value = '';
+    }
+
+    // エラー表示
+    function showError(message) {
+      errorMessage.textContent = message;
+      errorMessage.style.display = 'block';
+    }
+
+    function hideError() {
+      errorMessage.style.display = 'none';
+    }
+
+    // コピーボタン
+    copyBtn.addEventListener('click', () => {
+      resultText.select();
+      document.execCommand('copy');
+      
+      const originalText = copyBtn.textContent;
+      copyBtn.textContent = 'コピーしました！';
+      setTimeout(() => {
+        copyBtn.textContent = originalText;
+      }, 2000);
+    });
+
+    // クリアボタン
+    clearBtn.addEventListener('click', () => {
+      fileInput.value = '';
+      previewImage.style.display = 'none';
+      hideResult();
+      hideError();
+    });
+  </script>
+</body>
+</html>
