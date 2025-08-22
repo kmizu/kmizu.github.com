@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slack絵文字ジェネレータ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=M+PLUS+1p:wght@400;700;900&family=M+PLUS+Rounded+1c:wght@400;700;900&family=Kosugi+Maru&family=Sawarabi+Gothic&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 0.9rem;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .control-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        label {
+            font-weight: 600;
+            color: #444;
+            font-size: 0.9rem;
+        }
+
+        input[type="text"] {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+            font-family: inherit;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        select {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.3s;
+            font-family: inherit;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .font-size-control {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: #e0e0e0;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            cursor: pointer;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            cursor: pointer;
+            border: none;
+        }
+
+        .size-value {
+            min-width: 50px;
+            text-align: center;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .color-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .color-picker-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        input[type="color"] {
+            width: 60px;
+            height: 40px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .color-value {
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+            color: #666;
+        }
+
+        .preset-colors {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 10px;
+        }
+
+        .color-preset {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 8px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .color-preset:hover {
+            transform: scale(1.1);
+            border-color: #333;
+        }
+
+        .color-preset.active {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        .preview-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 25px;
+        }
+
+        .canvas-container {
+            background: #f8f8f8;
+            border-radius: 15px;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        canvas {
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: white;
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+        }
+
+        .size-info {
+            font-size: 0.85rem;
+            color: #888;
+            text-align: center;
+        }
+
+        .preview-display {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .preview-label {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .actual-size {
+            width: 128px;
+            height: 128px;
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+        }
+
+        .zoomed {
+            width: 256px;
+            height: 256px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #666;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .background-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+            background: #e0e0e0;
+            border-radius: 13px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle-switch.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+
+        .toggle-switch.active::after {
+            transform: translateX(24px);
+        }
+
+        .position-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .position-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .position-group label {
+            font-size: 0.85rem;
+        }
+
+        .position-group input[type="range"] {
+            width: 100%;
+        }
+
+        .tips {
+            margin-top: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .tips h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .tips ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .tips li {
+            color: #666;
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .tips li:before {
+            content: "✨";
+            position: absolute;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✨ Slack絵文字ジェネレータ ✨</h1>
+        <p class="subtitle">絵文字にしたい文字を入力してください！</p>
+        
+        <div class="main-content">
+            <div class="control-panel">
+                <div class="control-group">
+                    <label for="emojiText">テキスト</label>
+                    <input type="text" id="emojiText" placeholder="絵文字" maxlength="4" value="絵文字">
+                </div>
+
+                <div class="control-group">
+                    <label for="fontFamily">フォント</label>
+                    <select id="fontFamily">
+                        <option value="'Noto Sans JP', sans-serif" selected>Noto Sans JP</option>
+                        <option value="'M PLUS 1p', sans-serif">M+ 1p</option>
+                        <option value="'M PLUS Rounded 1c', sans-serif">M+ Rounded 1c</option>
+                        <option value="'Kosugi Maru', sans-serif">Kosugi Maru</option>
+                        <option value="'Sawarabi Gothic', sans-serif">Sawarabi Gothic</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label for="fontWeight">文字の太さ</label>
+                    <select id="fontWeight">
+                        <option value="400">標準</option>
+                        <option value="700" selected>太字</option>
+                        <option value="900">極太</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>文字サイズ</label>
+                    <div class="font-size-control">
+                        <input type="range" id="fontSize" min="20" max="80" value="50">
+                        <span class="size-value" id="fontSizeValue">50px</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>文字色</label>
+                    <div class="color-controls">
+                        <div class="color-picker-wrapper">
+                            <input type="color" id="textColor" value="#333333">
+                            <span class="color-value" id="colorValue">#333333</span>
+                        </div>
+                        <div class="preset-colors">
+                            <div class="color-preset" style="background: #000000" data-color="#000000"></div>
+                            <div class="color-preset" style="background: #333333" data-color="#333333"></div>
+                            <div class="color-preset" style="background: #666666" data-color="#666666"></div>
+                            <div class="color-preset" style="background: #999999" data-color="#999999"></div>
+                            <div class="color-preset" style="background: #FF6B6B" data-color="#FF6B6B"></div>
+                            <div class="color-preset" style="background: #4ECDC4" data-color="#4ECDC4"></div>
+                            <div class="color-preset" style="background: #45B7D1" data-color="#45B7D1"></div>
+                            <div class="color-preset" style="background: #96CEB4" data-color="#96CEB4"></div>
+                            <div class="color-preset" style="background: #FFEAA7" data-color="#FFEAA7"></div>
+                            <div class="color-preset" style="background: #DDA0DD" data-color="#DDA0DD"></div>
+                            <div class="color-preset" style="background: #98D8C8" data-color="#98D8C8"></div>
+                            <div class="color-preset" style="background: #FFD700" data-color="#FFD700"></div>
+                            <div class="color-preset" style="background: #FF69B4" data-color="#FF69B4"></div>
+                            <div class="color-preset" style="background: #00CED1" data-color="#00CED1"></div>
+                            <div class="color-preset" style="background: #FF8C00" data-color="#FF8C00"></div>
+                            <div class="color-preset" style="background: #9370DB" data-color="#9370DB"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>背景</label>
+                    <div class="background-toggle">
+                        <span>透明背景</span>
+                        <div class="toggle-switch" id="transparentBg"></div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>位置調整</label>
+                    <div class="position-controls">
+                        <div class="position-group">
+                            <label for="offsetX">横位置</label>
+                            <input type="range" id="offsetX" min="-20" max="20" value="0">
+                        </div>
+                        <div class="position-group">
+                            <label for="offsetY">縦位置</label>
+                            <input type="range" id="offsetY" min="-20" max="20" value="0">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="preview-section">
+                <div class="canvas-container">
+                    <div class="preview-display">
+                        <div>
+                            <p class="preview-label">実際のサイズ</p>
+                            <canvas id="emojiCanvas" class="actual-size" width="128" height="128"></canvas>
+                        </div>
+                        <div>
+                            <p class="preview-label">拡大表示 (2倍)</p>
+                            <canvas id="emojiCanvasZoom" class="zoomed" width="128" height="128"></canvas>
+                        </div>
+                    </div>
+                    <p class="size-info">Slack推奨: 128×128px</p>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn-secondary" id="resetBtn">リセット</button>
+                    <button class="btn-primary" id="downloadBtn">ダウンロード</button>
+                </div>
+
+                <div class="tips">
+                    <h3>💡 使い方のヒント</h3>
+                    <ul>
+                        <li>短い文字（1〜2文字）がおすすめです</li>
+                        <li>透明背景にするとSlackで使いやすくなります</li>
+                        <li>文字サイズは自動調整されますが、手動でも調整できます</li>
+                        <li>ダウンロード後、Slackのワークスペース設定から追加できます</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('emojiCanvas');
+        const canvasZoom = document.getElementById('emojiCanvasZoom');
+        const ctx = canvas.getContext('2d');
+        const ctxZoom = canvasZoom.getContext('2d');
+        
+        const textInput = document.getElementById('emojiText');
+        const fontFamilySelect = document.getElementById('fontFamily');
+        const fontWeightSelect = document.getElementById('fontWeight');
+        const fontSizeInput = document.getElementById('fontSize');
+        const fontSizeValue = document.getElementById('fontSizeValue');
+        const textColorInput = document.getElementById('textColor');
+        const colorValue = document.getElementById('colorValue');
+        const transparentBgToggle = document.getElementById('transparentBg');
+        const offsetXInput = document.getElementById('offsetX');
+        const offsetYInput = document.getElementById('offsetY');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const colorPresets = document.querySelectorAll('.color-preset');
+
+        let isTransparent = false;
+
+        function drawEmoji() {
+            const text = textInput.value || '絵';
+            const fontFamily = fontFamilySelect.value;
+            const fontWeight = fontWeightSelect.value;
+            const fontSize = parseInt(fontSizeInput.value);
+            const textColor = textColorInput.value;
+            const offsetX = parseInt(offsetXInput.value);
+            const offsetY = parseInt(offsetYInput.value);
+
+            // Clear canvases
+            ctx.clearRect(0, 0, 128, 128);
+            ctxZoom.clearRect(0, 0, 128, 128);
+
+            // Background
+            if (!isTransparent) {
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, 128, 128);
+                ctxZoom.fillStyle = 'white';
+                ctxZoom.fillRect(0, 0, 128, 128);
+            }
+
+            // Setup text properties
+            const font = `${fontWeight} ${fontSize}px ${fontFamily}`;
+            ctx.font = font;
+            ctx.fillStyle = textColor;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            ctxZoom.font = font;
+            ctxZoom.fillStyle = textColor;
+            ctxZoom.textAlign = 'center';
+            ctxZoom.textBaseline = 'middle';
+
+            // Draw text
+            const x = 64 + offsetX;
+            const y = 64 + offsetY;
+
+            // Check if text needs to be split into lines
+            if (text.length > 2) {
+                const lines = [text.substring(0, 2), text.substring(2)];
+                const lineHeight = fontSize * 0.9;
+                
+                lines.forEach((line, index) => {
+                    const lineY = y - (lineHeight / 2) + (index * lineHeight);
+                    ctx.fillText(line, x, lineY);
+                    ctxZoom.fillText(line, x, lineY);
+                });
+            } else {
+                ctx.fillText(text, x, y);
+                ctxZoom.fillText(text, x, y);
+            }
+        }
+
+        function updateFontSizeDisplay() {
+            fontSizeValue.textContent = `${fontSizeInput.value}px`;
+        }
+
+        function updateColorDisplay() {
+            colorValue.textContent = textColorInput.value.toUpperCase();
+        }
+
+        function setActiveColorPreset(color) {
+            colorPresets.forEach(preset => {
+                if (preset.dataset.color === color) {
+                    preset.classList.add('active');
+                } else {
+                    preset.classList.remove('active');
+                }
+            });
+        }
+
+        function downloadEmoji() {
+            const link = document.createElement('a');
+            const text = textInput.value || '絵文字';
+            const filename = `emoji_${text}.png`;
+            
+            canvas.toBlob(function(blob) {
+                const url = URL.createObjectURL(blob);
+                link.href = url;
+                link.download = filename;
+                link.click();
+                URL.revokeObjectURL(url);
+            });
+        }
+
+        function reset() {
+            textInput.value = '絵文字';
+            fontFamilySelect.value = "'Noto Sans JP', sans-serif";
+            fontWeightSelect.value = '700';
+            fontSizeInput.value = 50;
+            textColorInput.value = '#333333';
+            offsetXInput.value = 0;
+            offsetYInput.value = 0;
+            isTransparent = false;
+            transparentBgToggle.classList.remove('active');
+            updateFontSizeDisplay();
+            updateColorDisplay();
+            setActiveColorPreset('#333333');
+            drawEmoji();
+        }
+
+        // Event listeners
+        textInput.addEventListener('input', drawEmoji);
+        fontFamilySelect.addEventListener('change', drawEmoji);
+        fontWeightSelect.addEventListener('change', drawEmoji);
+        fontSizeInput.addEventListener('input', () => {
+            updateFontSizeDisplay();
+            drawEmoji();
+        });
+        textColorInput.addEventListener('input', () => {
+            updateColorDisplay();
+            setActiveColorPreset(textColorInput.value);
+            drawEmoji();
+        });
+        offsetXInput.addEventListener('input', drawEmoji);
+        offsetYInput.addEventListener('input', drawEmoji);
+
+        transparentBgToggle.addEventListener('click', () => {
+            isTransparent = !isTransparent;
+            transparentBgToggle.classList.toggle('active');
+            drawEmoji();
+        });
+
+        colorPresets.forEach(preset => {
+            preset.addEventListener('click', () => {
+                const color = preset.dataset.color;
+                textColorInput.value = color;
+                updateColorDisplay();
+                setActiveColorPreset(color);
+                drawEmoji();
+            });
+        });
+
+        downloadBtn.addEventListener('click', downloadEmoji);
+        resetBtn.addEventListener('click', reset);
+
+        // Initial setup
+        updateFontSizeDisplay();
+        updateColorDisplay();
+        setActiveColorPreset('#333333');
+        drawEmoji();
+
+        // Auto-adjust font size based on text length
+        textInput.addEventListener('input', () => {
+            const textLength = textInput.value.length;
+            let recommendedSize;
+            
+            switch(textLength) {
+                case 1:
+                    recommendedSize = 70;
+                    break;
+                case 2:
+                    recommendedSize = 50;
+                    break;
+                case 3:
+                    recommendedSize = 40;
+                    break;
+                case 4:
+                    recommendedSize = 35;
+                    break;
+                default:
+                    recommendedSize = 50;
+            }
+            
+            fontSizeInput.value = recommendedSize;
+            updateFontSizeDisplay();
+            drawEmoji();
+        });
+    </script>
+</body>
+</html>
