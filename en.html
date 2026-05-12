@@ -211,6 +211,43 @@
     letter-spacing: .04em;
   }
 
+  /* ===== Collapsible sections ===== */
+  section details { border: 0; padding: 0; margin: 0; }
+  section details > summary {
+    list-style: none;
+    cursor: pointer;
+    display: block;
+    transition: color .15s;
+  }
+  section details > summary::-webkit-details-marker { display: none; }
+  section details > summary::marker { content: ""; }
+  section details > summary > h2 {
+    margin-bottom: 6px;
+  }
+  section details > summary:hover > h2 {
+    color: var(--ink-2);
+  }
+  section details > summary > h2 .roman::after {
+    content: "▾";
+    display: inline-block;
+    color: var(--ink-4);
+    margin-left: 8px;
+    font-size: 0.85em;
+    transition: transform .15s ease-out;
+    transform-origin: 50% 55%;
+  }
+  section details:not([open]) > summary > h2 .roman::after {
+    transform: rotate(-90deg);
+  }
+  section details > summary:hover > h2 .roman::after {
+    color: var(--ink-2);
+  }
+  section details > summary:focus-visible {
+    outline: 2px solid var(--ink-4);
+    outline-offset: 4px;
+    border-radius: 2px;
+  }
+
   section > p { margin: 16px 0; color: var(--ink-2); }
 
   /* ===== Profile (definition list) ===== */
@@ -509,11 +546,14 @@
 
   <!-- ===== Profile ===== -->
   <section id="profile">
-    <h2>
+    <details open>
+      <summary>
+        <h2>
       <span class="only-en">Profile</span>
       <span class="only-ja">プロフィール</span>
       <span class="roman">i.</span>
     </h2>
+      </summary>
 
     <p class="only-en">
       Software engineer. My research and writing concern the design and implementation of programming languages, with a particular focus on <em>Packrat parsing</em> and Parsing Expression Grammars (PEG). I have been active in the Japanese Scala community since its early days and have co-authored two books on practical Scala for working engineers.
@@ -544,15 +584,19 @@
       <dt>Blog</dt>
       <dd><a href="http://kmizu.hatenablog.com/" target="_blank" rel="noopener">kmizu.hatenablog.com</a></dd>
     </dl>
+    </details>
   </section>
 
   <!-- ===== Publications JA ===== -->
   <section id="publications-ja">
-    <h2>
+    <details open>
+      <summary>
+        <h2>
       <span class="only-en">Publications (Japanese)</span>
       <span class="only-ja">論文（和文）</span>
       <span class="roman">ii.</span>
     </h2>
+      </summary>
 
     <div class="bib-group">
       <span class="only-en">Refereed Journal Papers</span>
@@ -683,15 +727,19 @@
         </div>
       </li>
     </ol>
+    </details>
   </section>
 
   <!-- ===== Publications EN ===== -->
   <section id="publications-en">
-    <h2>
+    <details open>
+      <summary>
+        <h2>
       <span class="only-en">Publications (English)</span>
       <span class="only-ja">論文（英文）</span>
       <span class="roman">iii.</span>
     </h2>
+      </summary>
 
     <div class="bib-group">
       <span class="only-en">Refereed Workshop Papers</span>
@@ -708,15 +756,19 @@
         </div>
       </li>
     </ol>
+    </details>
   </section>
 
   <!-- ===== Books ===== -->
   <section id="books">
-    <h2>
+    <details open>
+      <summary>
+        <h2>
       <span class="only-en">Books</span>
       <span class="only-ja">著書</span>
       <span class="roman">iv.</span>
     </h2>
+      </summary>
 
     <ul class="books">
       <li>
@@ -748,15 +800,19 @@
         </span>
       </li>
     </ul>
+    </details>
   </section>
 
   <!-- ===== Other Activity ===== -->
   <section id="activity">
-    <h2>
+    <details open>
+      <summary>
+        <h2>
       <span class="only-en">Other Activity</span>
       <span class="only-ja">その他の活動</span>
       <span class="roman">v.</span>
     </h2>
+      </summary>
 
     <ul class="activity">
       <li>
@@ -838,15 +894,19 @@
         </p>
       </li>
     </ul>
+    </details>
   </section>
 
   <!-- ===== Contact ===== -->
   <section id="contact">
-    <h2>
+    <details open>
+      <summary>
+        <h2>
       <span class="only-en">Contact</span>
       <span class="only-ja">連絡先</span>
       <span class="roman">vi.</span>
     </h2>
+      </summary>
 
     <p class="only-en">
       I am employed full-time, but I do accept advisory engagements where my availability allows. My areas of strength are Scala and computer-science education broadly.
@@ -868,6 +928,7 @@
         <span class="only-ja">以前のアドレスをご存じの方は、そのままお使いいただいて構いません。</span>
       </p>
     </div>
+    </details>
   </section>
 
   <!-- ===== Colophon ===== -->
@@ -890,6 +951,15 @@
       setTimeout(() => location.reload(), 2000);
     } catch (e) {}
   });
+
+  // Auto-expand a section when navigating to its anchor (TOC click or hash URL)
+  function openTargetSection() {
+    if (!location.hash) return;
+    const d = document.querySelector(location.hash + ' > details');
+    if (d) d.open = true;
+  }
+  openTargetSection();
+  window.addEventListener('hashchange', openTargetSection);
 </script>
 
 </body>
