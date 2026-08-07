@@ -3,127 +3,457 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>QRコードジェネレーター</title>
+  <title>txt2qr — QRコードジェネレーター</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=M+PLUS+1+Code:wght@400;500&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
-    /* シンプルでスタイリッシュなデザイン */
+    :root {
+      --paper: #F3F4EF;   /* 紙 */
+      --ink: #1A1C22;     /* 墨 */
+      --hai: #676C79;     /* 灰 */
+      --shiro: #FFFFFF;   /* 白 */
+      --shu: #D7412E;     /* 朱 */
+      --ai: #22318F;      /* 藍 */
+      --line: #D9DBD2;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
     body {
-      background: #f7f7f7;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: 'Zen Kaku Gothic New', sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    :focus-visible { outline: 2px solid var(--ai); outline-offset: 2px; }
+
+    .page {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 20px 48px;
+    }
+
+    /* ---- ヘッダー ---- */
+    .site-head {
       display: flex;
       align-items: center;
-      justify-content: center;
-      height: 100vh;
+      gap: 16px;
+      padding: 30px 0 22px;
+      border-bottom: 1px solid var(--line);
+    }
+    /* QRのファインダーパターン（回）＋朱の中心 */
+    .mark {
+      flex: none;
+      width: 34px;
+      height: 34px;
+      border: 5px solid var(--ink);
+      display: grid;
+      place-items: center;
+    }
+    .mark::before {
+      content: "";
+      width: 14px;
+      height: 14px;
+      background: var(--shu);
+    }
+    .site-title {
       margin: 0;
+      font-family: 'DotGothic16', sans-serif;
+      font-weight: 400;
+      font-size: 30px;
+      line-height: 1.1;
+      letter-spacing: 0.03em;
     }
-    .container {
-      background: #fff;
-      padding: 20px 30px;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      text-align: center;
-      max-width: 400px;
-      width: 90%;
+    .site-sub {
+      margin: 4px 0 0;
+      font-size: 12.5px;
+      color: var(--hai);
     }
-    h1 {
-      margin-bottom: 20px;
-      font-size: 24px;
-      color: #333;
+
+    /* ---- ワークベンチ ---- */
+    .workbench {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 40px;
+      margin-top: 34px;
     }
-    input, select {
+    @media (max-width: 720px) {
+      .workbench { grid-template-columns: 1fr; gap: 28px; }
+    }
+
+    .field { margin: 0 0 22px; border: 0; padding: 0; }
+    .field-label, .field legend {
+      display: block;
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--hai);
+      margin-bottom: 8px;
+      padding: 0;
+    }
+
+    input[type="text"], select {
       width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border: 1px solid #ccc;
-      border-radius: 4px;
+      padding: 11px 12px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--shiro);
+      color: var(--ink);
       font-size: 14px;
+      font-family: 'Zen Kaku Gothic New', sans-serif;
     }
-    button {
-      padding: 10px 20px;
-      margin: 10px 5px;
-      border: none;
-      background-color: #3498db;
-      color: #fff;
-      border-radius: 4px;
-      font-size: 14px;
+    input[type="text"] { font-family: 'M PLUS 1 Code', monospace; }
+
+    /* スタイル選択ピル */
+    .style-options { display: flex; flex-wrap: wrap; gap: 8px; }
+    .pill {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--shiro);
       cursor: pointer;
-      transition: background-color 0.2s;
+      font-weight: 500;
     }
-    button:hover {
-      background-color: #2980b9;
+    .pill input { position: absolute; opacity: 0; pointer-events: none; }
+    .pill:has(input:checked) {
+      border-color: var(--ink);
+      box-shadow: inset 0 0 0 1px var(--ink);
     }
-    #qrcode {
-      margin: 20px auto;
+    .pill:has(input:focus-visible) { outline: 2px solid var(--ai); outline-offset: 2px; }
+    .swatch { width: 13px; height: 13px; flex: none; }
+    .swatch-simple { background: var(--ink); }
+    .swatch-maru { background: var(--ink); border-radius: 50%; box-shadow: 3px -3px 0 -1px var(--shu); }
+    .swatch-gradient { background: linear-gradient(135deg, var(--ai), var(--shu)); border-radius: 50%; }
+
+    /* ボタン */
+    .btn {
+      font: inherit;
+      font-weight: 700;
+      padding: 12px 20px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: background-color 0.15s ease, color 0.15s ease;
     }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary { background: var(--shu); color: var(--shiro); }
+    .btn-primary:hover:not(:disabled) { background: #BE3423; }
+
+    .form-msg {
+      margin: 12px 0 0;
+      min-height: 1.4em;
+      font-size: 13px;
+      color: var(--shu);
+    }
+
+    /* ---- プレビュー（トンボ付きプレート） ---- */
+    .preview-panel { display: flex; flex-direction: column; gap: 14px; }
+    .plate {
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-height: 340px;
+      padding: 32px;
+      background: var(--shiro);
+      border: 1px solid var(--line);
+      background-image: radial-gradient(var(--line) 1.5px, transparent 1.5px);
+      background-size: 16px 16px;
+    }
+    .plate.has-qr { background-image: none; }
+    .tombo {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      border: 0 solid var(--hai);
+      opacity: 0.6;
+    }
+    .tombo-tl { top: 10px; left: 10px; border-top-width: 1.5px; border-left-width: 1.5px; }
+    .tombo-tr { top: 10px; right: 10px; border-top-width: 1.5px; border-right-width: 1.5px; }
+    .tombo-bl { bottom: 10px; left: 10px; border-bottom-width: 1.5px; border-left-width: 1.5px; }
+    .tombo-br { bottom: 10px; right: 10px; border-bottom-width: 1.5px; border-right-width: 1.5px; }
+    .placeholder {
+      margin: 0;
+      text-align: center;
+      font-family: 'DotGothic16', sans-serif;
+      font-size: 14px;
+      color: var(--hai);
+    }
+    .plate.has-qr .placeholder { display: none; }
+    .plate:not(.has-qr) .qr-box { display: none; }
+    .qr-box canvas { display: block; width: min(100%, 264px); height: auto; }
+    @media (prefers-reduced-motion: no-preference) {
+      .qr-box canvas { animation: pop 0.3s ease; }
+      @keyframes pop {
+        from { opacity: 0; transform: scale(0.96); }
+      }
+    }
+
+    .preview-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .meta-lines { flex: 1; min-width: 0; }
+    .encoded {
+      margin: 0;
+      font-family: 'M PLUS 1 Code', monospace;
+      font-size: 12px;
+      color: var(--ink);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    /* 印刷指示書風のスペック行：生成物の実仕様 */
+    .spec {
+      margin: 2px 0 0;
+      font-family: 'M PLUS 1 Code', monospace;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      color: var(--hai);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    @media (max-width: 720px) {
+      .spec { white-space: normal; word-break: keep-all; }
+    }
+
+    /* ---- フッター ---- */
+    .site-foot {
+      margin-top: 44px;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+      font-size: 11.5px;
+      color: var(--hai);
+    }
+    .site-foot p { margin: 2px 0; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>QRコードジェネレーター</h1>
-    <input type="text" id="urlInput" placeholder="URLを入力">
-    <select id="sizeSelect">
-      <option value="256">256 x 256</option>
-      <option value="512">512 x 512</option>
-    </select>
-    <button id="generateBtn">QRコード生成</button>
-    <div id="qrcode"></div>
-    <button id="saveBtn">画像を保存</button>
+  <div class="page">
+    <header class="site-head">
+      <span class="mark" aria-hidden="true"></span>
+      <div>
+        <h1 class="site-title">txt2qr</h1>
+        <p class="site-sub">QRコードジェネレーター — テキストやURLから、その場で生成</p>
+      </div>
+    </header>
+
+    <main class="workbench">
+      <section aria-label="生成設定">
+        <div class="field">
+          <label class="field-label" for="textInput">テキストまたはURL</label>
+          <input type="text" id="textInput" placeholder="https://example.com" autocomplete="off" spellcheck="false" autofocus>
+        </div>
+
+        <fieldset class="field">
+          <legend>スタイル</legend>
+          <div class="style-options">
+            <label class="pill">
+              <input type="radio" name="style" value="simple" checked>
+              <span class="swatch swatch-simple" aria-hidden="true"></span>シンプル
+            </label>
+            <label class="pill">
+              <input type="radio" name="style" value="maru">
+              <span class="swatch swatch-maru" aria-hidden="true"></span>まる
+            </label>
+            <label class="pill">
+              <input type="radio" name="style" value="gradient">
+              <span class="swatch swatch-gradient" aria-hidden="true"></span>グラデ
+            </label>
+          </div>
+        </fieldset>
+
+        <div class="field">
+          <label class="field-label" for="sizeSelect">画像サイズ（保存時）</label>
+          <select id="sizeSelect">
+            <option value="256">256 × 256 px</option>
+            <option value="512" selected>512 × 512 px</option>
+            <option value="1024">1024 × 1024 px</option>
+          </select>
+        </div>
+
+        <p class="form-msg" id="formMsg" role="status"></p>
+      </section>
+
+      <section class="preview-panel" aria-label="プレビュー">
+        <div class="plate" id="plate">
+          <span class="tombo tombo-tl" aria-hidden="true"></span>
+          <span class="tombo tombo-tr" aria-hidden="true"></span>
+          <span class="tombo tombo-bl" aria-hidden="true"></span>
+          <span class="tombo tombo-br" aria-hidden="true"></span>
+          <p class="placeholder">テキストを入力すると、<br>その場でQRコードが現れます</p>
+          <div class="qr-box" id="qrBox"></div>
+        </div>
+        <div class="preview-meta">
+          <div class="meta-lines">
+            <p class="encoded" id="encodedText"></p>
+            <p class="spec" id="specText"></p>
+          </div>
+          <button type="button" id="saveBtn" class="btn btn-primary" disabled>PNGで保存</button>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-foot">
+      <p>すべてブラウザ内で生成され、入力内容がサーバーへ送信されることはありません。</p>
+      <p>「QRコード」は株式会社デンソーウェーブの登録商標です。</p>
+    </footer>
   </div>
 
-  <!-- QRCode.js ライブラリ（CDNより読み込み） -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <!-- qr-code-styling：スタイル付きQRコード生成ライブラリ（CDN） -->
+  <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1/lib/qr-code-styling.js"></script>
   <script>
-    // 「QRコード生成」ボタンの処理
-    document.getElementById("generateBtn").addEventListener("click", function() {
-      var url = document.getElementById("urlInput").value.trim();
-      var size = parseInt(document.getElementById("sizeSelect").value, 10);
-      if (url === "") {
-        alert("URLを入力してください！");
-        return;
-      }
-      // 前回生成したQRコードをクリア
-      var qrCodeContainer = document.getElementById("qrcode");
-      qrCodeContainer.innerHTML = "";
-      
-      // QRコード生成
-      new QRCode(qrCodeContainer, {
-        text: url,
-        width: size,
-        height: size,
-        colorDark : "#000000",
-        colorLight : "#ffffff",
-        correctLevel : QRCode.CorrectLevel.H
-      });
-    });
+    (function () {
+      "use strict";
 
-    // 「画像を保存」ボタンの処理
-    document.getElementById("saveBtn").addEventListener("click", function() {
-      var qrCodeContainer = document.getElementById("qrcode");
-      // canvas要素を取得（QRCode.jsはモダンブラウザではcanvasを生成します）
-      var canvas = qrCodeContainer.querySelector("canvas");
-      if (canvas) {
-        var dataURL = canvas.toDataURL("image/png");
-        // 一時的なリンクを作成してクリックすることでダウンロードを実行
-        var a = document.createElement("a");
-        a.href = dataURL;
-        a.download = "qrcode.png";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      } else {
-        // canvasがない場合、imgタグから取得（念のためのフォールバック）
-        var img = qrCodeContainer.querySelector("img");
-        if (img) {
-          var a = document.createElement("a");
-          a.href = img.src;
-          a.download = "qrcode.png";
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-        } else {
-          alert("QRコードが生成されていません！");
+      var textInput = document.getElementById("textInput");
+      var sizeSelect = document.getElementById("sizeSelect");
+      var saveBtn = document.getElementById("saveBtn");
+      var plate = document.getElementById("plate");
+      var qrBox = document.getElementById("qrBox");
+      var formMsg = document.getElementById("formMsg");
+      var encodedText = document.getElementById("encodedText");
+      var specText = document.getElementById("specText");
+
+      var STYLE_LABELS = { simple: "シンプル", maru: "まる", gradient: "グラデ" };
+
+      var INK = "#1A1C22";
+      var SHU = "#D7412E";
+      var AI = "#22318F";
+      var WHITE = "#FFFFFF";
+
+      var STYLE_PRESETS = {
+        simple: {
+          dotsOptions: { type: "square", color: INK },
+          cornersSquareOptions: { type: "square", color: INK },
+          cornersDotOptions: { type: "square", color: INK }
+        },
+        maru: {
+          dotsOptions: { type: "rounded", color: INK },
+          cornersSquareOptions: { type: "extraRounded", color: SHU },
+          cornersDotOptions: { type: "dot", color: INK }
+        },
+        gradient: {
+          dotsOptions: {
+            type: "dots",
+            gradient: {
+              type: "linear",
+              rotation: Math.PI / 4,
+              colorStops: [
+                { offset: 0, color: AI },
+                { offset: 1, color: SHU }
+              ]
+            }
+          },
+          cornersSquareOptions: { type: "extraRounded", color: AI },
+          cornersDotOptions: { type: "dot", color: SHU }
+        }
+      };
+
+      var qrCode = null;
+
+      function selectedStyle() {
+        return document.querySelector('input[name="style"]:checked').value;
+      }
+
+      function buildOptions(data) {
+        var size = parseInt(sizeSelect.value, 10);
+        var base = {
+          width: size,
+          height: size,
+          type: "canvas",
+          data: data,
+          margin: Math.round(size * 0.04),
+          qrOptions: { errorCorrectionLevel: "H" },
+          backgroundOptions: { color: WHITE }
+        };
+        return Object.assign({}, base, STYLE_PRESETS[selectedStyle()]);
+      }
+
+      function updateMeta(data) {
+        var size = sizeSelect.value;
+        encodedText.textContent = data;
+        specText.textContent =
+          STYLE_LABELS[selectedStyle()] + " / " + size + "×" + size + "px / 誤り訂正レベル H";
+      }
+
+      function showEmptyState() {
+        plate.classList.remove("has-qr");
+        encodedText.textContent = "";
+        specText.textContent = "";
+        saveBtn.disabled = true;
+      }
+
+      /* スタイル・サイズ変更時：インスタンスを作り直す
+         （update() の深いマージでグラデーション設定が残留するのを避ける） */
+      function rebuild(data) {
+        if (typeof QRCodeStyling === "undefined") {
+          formMsg.textContent = "ライブラリの読み込みに失敗しました。接続を確認して再読み込みしてください。";
+          return;
+        }
+        formMsg.textContent = "";
+        qrBox.replaceChildren();
+        qrCode = new QRCodeStyling(buildOptions(data));
+        qrCode.append(qrBox);
+        plate.classList.add("has-qr");
+        updateMeta(data);
+        saveBtn.disabled = false;
+      }
+
+      /* 入力中：データだけ差し替えて滑らかに更新する */
+      function refresh() {
+        var data = textInput.value.trim();
+        if (data === "") {
+          showEmptyState();
+          return;
+        }
+        if (qrCode === null) {
+          rebuild(data);
+          return;
+        }
+        qrCode.update({ data: data });
+        plate.classList.add("has-qr");
+        updateMeta(data);
+        saveBtn.disabled = false;
+      }
+
+      var debounceTimer = null;
+      function refreshDebounced() {
+        if (debounceTimer !== null) {
+          clearTimeout(debounceTimer);
+        }
+        debounceTimer = setTimeout(refresh, 150);
+      }
+
+      function rebuildIfVisible() {
+        var data = textInput.value.trim();
+        if (data !== "") {
+          rebuild(data);
         }
       }
-    });
+
+      textInput.addEventListener("input", refreshDebounced);
+      sizeSelect.addEventListener("change", rebuildIfVisible);
+      document.querySelectorAll('input[name="style"]').forEach(function (radio) {
+        radio.addEventListener("change", rebuildIfVisible);
+      });
+      saveBtn.addEventListener("click", function () {
+        if (qrCode !== null) {
+          qrCode.download({ name: "qrcode", extension: "png" });
+        }
+      });
+    })();
   </script>
 </body>
 </html>
